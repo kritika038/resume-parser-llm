@@ -1,0 +1,20 @@
+[
+  {
+    "id": "eval_01",
+    "candidate_name": "Alice Dev",
+    "resume_text": "Alice Dev\nEmail: alice.dev@gmail.com | Phone: +1 555-0199 | Location: San Francisco, CA\n\nOBJECTIVE\nSenior Software Engineer seeking high-impact role building large-scale AI applications and intelligent agents.\n\nEDUCATION\n- M.S. in Software Engineering, Stanford University (2022)\n- B.S. in Computer Science, UC Berkeley (2020)\n\nSKILLS\n- Languages: Python, SQL, JavaScript\n- Frameworks & AI: PyTorch, LangChain, Sentence Transformers, FastAPI\n- Cloud & DevOps: Docker, Kubernetes, AWS, Git, GitHub, CI/CD\n\nEXPERIENCE\nSenior Software Engineer | TechCorp Inc. (2022 - Present)\n- Architected high-throughput RAG search platform using Sentence Transformers and PyTorch, yielding 30% retrieval speedups.\n- Designed robust microservice mesh using FastAPI, Docker, and Kubernetes deployed on AWS ECS.\n- Authored automated CI/CD pipelines under Git and GitHub Actions, lowering deployments release cycles from days to minutes.\n- Built responsive frontend telemetry dashboards using JavaScript and SQL databases.",
+    "target_jd": "We are looking for a Senior AI Developer to join our team!\nRequired Technical Skills:\n- Python, SQL, JavaScript\n- PyTorch, Deep Learning, LangChain, Sentence Transformers\n- FastAPI, Docker, Kubernetes, AWS, GCP\n- Git, GitHub, CI/CD"
+  },
+  {
+    "id": "eval_02",
+    "candidate_name": "Bob Coder",
+    "resume_text": "Bob Coder\nEmail: bob.coder@yahoo.com | Phone: +1 555-0144 | Location: Phoenix, AZ\n\nOBJECTIVE\nMotivated Front End Developer with a passion for designing pixel-perfect, highly responsive, and accessible user interfaces.\n\nEDUCATION\n- B.S. in Information Technology, Arizona State University (2023)\n\nSKILLS\n- Frontend: JavaScript, HTML, CSS, React\n- Tools: Git, GitHub, VS Code\n\nEXPERIENCE\nJunior Developer | WebCrafters Studio (2023 - Present)\n- Developed responsive React web layouts, enhancing core web vitals and speed optimization.\n- Collaborated with design teams using vanilla CSS and JavaScript to convert mockups to responsive pages.\n- Maintained source control version registries using Git and GitHub workflows.",
+    "target_jd": "Position: Junior Frontend Developer\nRequirements:\n- Strong knowledge of JavaScript, HTML5, and CSS3\n- Hands-on experience building web layouts with React\n- Version control with Git & GitHub\n- Attention to UI/UX details and responsiveness"
+  },
+  {
+    "id": "eval_03",
+    "candidate_name": "Charlie ML",
+    "resume_text": "Charlie ML\nEmail: charlie.ml@outlook.com | Phone: +1 555-0177\n\nOBJECTIVE\nDedicated Machine Learning Researcher specializing in Deep Learning, NLP representation models, and dense vector search architectures.\n\nEDUCATION\n- Ph.D. in Machine Learning, MIT (2024)\n\nSKILLS\n- Core Skills: Python, SQL\n- AI/ML Frameworks: PyTorch, Deep Learning, Sentence Transformers, NLP, spaCy\n- Infrastructure: Git, Jupyter Notebooks, AWS (EC2)\n\nEXPERIENCE\nAI Research Assistant | MIT CSAIL (2020 - 2024)\n- Fine-tuned Sentence Transformers models on custom document collections for dense semantic search applications.\n- Devised custom PyTorch architectures to solve intricate deep learning and Natural Language Processing challenges.\n- Authored reproducible Jupyter notebook analysis workflows published in top conference journals.\n- Managed GPU resources and training data pipelines on AWS EC2 clusters.",
+    "target_jd": "We are seeking a Machine Learning Engineer to design and deploy state-of-the-art representation models.\nRequired:\n- Strong coding background in Python and SQL\n- Hands-on expertise in PyTorch and Deep Learning\n- Experience with NLP and Sentence Transformers representations\n- Familiarity with Git workflows"
+  }
+]

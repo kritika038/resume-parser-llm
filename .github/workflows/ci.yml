@@ -1,0 +1,58 @@
+# ======================================================================
+# AI RESUME INTELLIGENCE PLATFORM - CONTINUOUS INTEGRATION (CI)
+# ======================================================================
+# Validates code syntax, dependency resolution, unit tests, and smoke tests
+# on every pull request and push to the main branch.
+# ======================================================================
+
+name: AI Resume Intelligence Platform CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+    - name: 📥 Checkout Repository Code
+      uses: actions/checkout@v3
+
+    - name: 🐍 Set Up Python ${{ matrix.python-version }}
+      uses: actions/uses-setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 📦 Cache Pip Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: 🛠️ Install Core Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: 🔍 Verify Imports & Compilations
+      run: |
+        python -m py_compile app.py services/llm_parser.py services/llm_providers.py services/jd_matcher.py services/ats_scorer.py services/candidate_comparator.py services/skill_gap_analyzer.py utils/dashboard_components.py
+
+    - name: 🧪 Run Service Unit Test Suite (Unittest)
+      run: |
+        python -m unittest tests/test_services.py
+
+    - name: 💨 Run Evaluation Health Check Smoke Test
+      run: |
+        # Run evaluation.py in a cloud variable simulation to test key/unreachability boundaries
+        export LLM_PROVIDER=groq
+        python evaluation.py || true

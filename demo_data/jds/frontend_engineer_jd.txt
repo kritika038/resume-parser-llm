@@ -1,0 +1,13 @@
+POSITION: Frontend React Specialist
+COMPANY: WebDesign Studios
+LOCATION: Seattle, WA (On-site)
+
+ROLE DESCRIPTION:
+We are looking for a highly creative Frontend Engineer to build interactive, pixel-perfect, and ultra-responsive recruiting dashboards. You will work with vanilla styles and CSS Grid to craft exceptional user experiences.
+
+KEY REQUIREMENTS:
+- Exceptional proficiency in JavaScript, TypeScript, and React frameworks.
+- Deep expertise crafting responsive layouts utilizing CSS Grid, Flexbox, and CSS variables.
+- Fluent build setup utilizing Vite, Webpack, and NPM packaging.
+- Clean code structures inside Git repositories managed under GitHub workflows.
+- Professional components design and mobile-first responsive layout structures.

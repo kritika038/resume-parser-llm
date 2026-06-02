@@ -1,0 +1,38 @@
+ALICE DEV
+Senior AI Developer | Large Language Model Architect
+Email: alice.dev@uipath.ai | Phone: +1-555-0199 | Location: San Francisco, CA
+LinkedIn: linkedin.com/in/alicedev-ai | GitHub: github.com/alicedev
+
+======================================================================
+PROFESSIONAL SUMMARY
+======================================================================
+Senior AI Engineer and LLM Architect with 6+ years of experience building and deploying scalable cognitive microservices and retrieval systems. Specialized in fine-tuning Large Language Models, optimizing local model quantization pipelines, and constructing high-throughput RAG (Retrieval-Augmented Generation) applications. Proven record of scaling model inferences on distributed GPU clusters.
+
+======================================================================
+TECHNICAL SKILLS
+======================================================================
+- AI / Machine Learning: LLMs (Mistral, Llama, GPT), PyTorch, Hugging Face, LangChain, SentenceTransformers
+- Web Services: FastAPI, Python, SQL, REST APIs, Docker, Kubernetes, AWS, Git, CI/CD pipelines
+- Data Engineering: SQL, PostgreSQL, Vector Databases (Qdrant, Pinecone), Pandas, Numpy
+
+======================================================================
+PROFESSIONAL EXPERIENCE
+======================================================================
+Senior AI Engineer | Cognitive Tech Solutions, SF | Jan 2024 - Present
+- Spearheaded the transition of document parsing workloads to local Mistral-7B models running on Ollama, reducing API costs by 84% while increasing data extraction accuracy to 99%.
+- Built high-performance vector search pipelines using Qdrant and SentenceTransformers (all-MiniLM-L6-v2) for matching structured resume databases, processing over 10,000 requests per minute.
+- Authored decoupled REST microservices in FastAPI and packaged deployments inside Docker containers managed by local Kubernetes GPU clusters.
+
+AI Research Specialist | Neural Labs, Austin | Mar 2021 - Dec 2023
+- Designed fine-tuning architectures for sequence-to-sequence transformer models on local PyTorch clusters, increasing model evaluation accuracy by 18%.
+- Integrated automated continuous integration and continuous delivery (CI/CD) pipelines on AWS, lowering processing latency by 35%.
+- Maintained core relational database schemas in PostgreSQL, utilizing indexing patterns to support downstream vector embeddings queries.
+
+======================================================================
+EDUCATION
+======================================================================
+Master of Science in Computer Science (AI Track)
+Stanford University, Stanford, CA | 2021
+
+Bachelor of Science in Software Engineering
+University of Texas, Austin, TX | 2019

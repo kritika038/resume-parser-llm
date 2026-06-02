@@ -1,0 +1,35 @@
+BOB CODER
+Frontend Engineer | React Specialist
+Email: bob.coder@react.dev | Phone: +1-555-0211 | Location: Seattle, WA
+GitHub: github.com/bobcoder | LinkedIn: linkedin.com/in/bobcoder
+
+======================================================================
+PROFESSIONAL SUMMARY
+======================================================================
+Passionate Frontend Software Engineer with 2+ years of experience crafting interactive, accessible, and high-performance user interfaces. Specialized in React, JavaScript (ES6+), and modern styling structures like CSS Grid, CSS variables, and responsive design systems. Proficient in web standards, performance profiling, and git workflows.
+
+======================================================================
+TECHNICAL SKILLS
+======================================================================
+- Frontend Core: JavaScript, TypeScript, React, HTML5, CSS3, CSS Grid, Flexbox
+- Styling & Build Tools: Vanilla CSS, Tailwind CSS, Webpack, Vite, NPM, Git, GitHub
+- Component Design: UI/UX prototyping, state management, mobile-first design
+
+======================================================================
+PROFESSIONAL EXPERIENCE
+======================================================================
+Junior Frontend Engineer | WebDesign Studios, Seattle | May 2024 - Present
+- Created premium single-page web applications utilizing React and Vite, reducing initial bundle sizes by 28% through code splitting and tree shaking.
+- Designed highly responsive layouts utilizing CSS Grid, Vanilla CSS variables, and modern Tailwind variables to ensure accessibility.
+- Implemented robust state-management structures inside multi-view dashboards, resolving visual performance bottlenecks in live recruiter leaderboard tables.
+
+Frontend Developer Intern | DevApp LLC, Portland | Jan 2023 - Apr 2024
+- Authored reusable React UI component libraries, reducing frontend development time for downstream projects by 15%.
+- Maintained code repositories inside GitHub, performing code reviews and coordinating feature branches using clean Git flows.
+- Optimised visual loading speeds on landing pages, increasing performance scores by 12 points.
+
+======================================================================
+EDUCATION
+======================================================================
+Bachelor of Science in Web Design & Interactive Media
+Seattle Central College, Seattle, WA | 2023

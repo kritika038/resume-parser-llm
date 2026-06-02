@@ -1,0 +1,14 @@
+POSITION: Senior AI Developer
+COMPANY: UiPath Cognitive Tech
+LOCATION: San Francisco, CA (Hybrid)
+
+ROLE DESCRIPTION:
+We are seeking an experienced Senior AI Engineer to join our cognitive talent automation team. You will lead the architecture, construction, and deployment of local LLM models and high-throughput vector space retrieval models.
+
+KEY REQUIREMENTS:
+- Extensive experience fine-tuning and running local Large Language Models (Mistral, Llama).
+- Advanced competency in PyTorch, SentenceTransformers, and deep vector spaces similarity models.
+- Core proficiency packaging microservices inside Docker and scaling deployments on Kubernetes GPU clusters.
+- Fluent REST API design using FastAPI and Python.
+- Strong repository version controls utilizing Git and CI/CD automated deployment pipelines.
+- Sound database practices utilizing SQL and PostgreSQL.

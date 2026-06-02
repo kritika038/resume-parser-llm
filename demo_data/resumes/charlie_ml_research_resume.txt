@@ -1,0 +1,38 @@
+CHARLIE ML
+Machine Learning Specialist | Computer Vision & NLP Researcher
+Email: charlie.ml@neural.net | Phone: +1-555-0322 | Location: Boston, MA
+GitHub: github.com/charlieml | LinkedIn: linkedin.com/in/charlieml
+
+======================================================================
+PROFESSIONAL SUMMARY
+======================================================================
+Rigorous Machine Learning Specialist and researcher with 3+ years of experience constructing deep learning representations, computational matrices, and model evaluations. Specialized in PyTorch model training, SentenceTransformers embeddings, dense vector representations, and tokenization optimizations.
+
+======================================================================
+TECHNICAL SKILLS
+======================================================================
+- Machine Learning: Deep Learning, PyTorch, Transformers, SentenceTransformers, NLP, Computer Vision
+- Core Science: Python, SQL, Git, GitHub, Hugging Face Hub, Model Quantization
+- Math & Analytics: Linear Algebra, Vector Spaces, Matrix operations, Pandas, Numpy
+
+======================================================================
+PROFESSIONAL EXPERIENCE
+======================================================================
+Machine Learning Scientist | DeepMinded LLC, Boston | Jun 2024 - Present
+- Built custom NLP sentence similarity indexes utilizing pre-trained PyTorch layers and SentenceTransformer architectures, improving evaluation benchmarking by 22%.
+- Optimized token processing logic and deep learning matrix manipulations inside transformer architectures, improving vector space generation latency.
+- Authored computational validation scripts using Pandas, Numpy, and PyTorch, validating multi-dimensional model structures.
+
+Graduate Research Assistant | Boston Lab, Boston | Sep 2022 - May 2024
+- Trained classification models utilizing PyTorch and Hugging Face pipelines on local GPU nodes, reducing model overfitting rates by 14%.
+- Conducted deep-dive analysis on dense vector space alignments, utilizing linear algebra matrices to compare embedding architectures.
+- Shared code bases in Git and coordinated model checkpoints using centralized version controls.
+
+======================================================================
+EDUCATION
+======================================================================
+Master of Science in Computational Mathematics
+Boston University, Boston, MA | 2024
+
+Bachelor of Science in Computational Science
+Massachusetts Institute of Technology (MIT), Cambridge, MA | 2022

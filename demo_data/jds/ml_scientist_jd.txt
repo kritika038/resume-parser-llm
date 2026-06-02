@@ -1,0 +1,13 @@
+POSITION: Machine Learning Scientist
+COMPANY: DeepMinded LLC
+LOCATION: Boston, MA (Hybrid)
+
+ROLE DESCRIPTION:
+We are looking for a rigorous Machine Learning Specialist to train, evaluate, and scale multi-dimensional deep learning representation models and neural vector embeddings networks.
+
+KEY REQUIREMENTS:
+- Advanced competency in PyTorch deep learning layers and transformers architectures.
+- Experience utilizing SentenceTransformers, NLP frameworks, and Hugging Face model hubs.
+- Deep mathematical understanding of linear algebra, matrix operations, and vector embeddings similarities.
+- Python data analysis proficiency utilizing Pandas and Numpy.
+- Repository version controls and feature tracking in Git.
