@@ -80,10 +80,7 @@ class GroqProvider(LLMProvider):
     """Cloud provider utilizing the official Groq API endpoint for high-speed inference."""
     def __init__(self):
         self.api_key = os.environ.get("GROQ_API_KEY")
-        self.model = os.getenv(
-            "GROQ_MODEL",
-            "llama-3.1-8b-instant"
-        )
+        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         logger.info(f"GroqProvider initialized with model={self.model}")
 
     def generate(self, prompt: str) -> Optional[str]:
