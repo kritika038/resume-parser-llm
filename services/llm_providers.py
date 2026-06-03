@@ -132,7 +132,9 @@ def get_llm_provider() -> LLMProvider:
     Returns:
         LLMProvider: Active LLM provider instance (Ollama or Groq)
     """
-    provider_name = os.environ.get("LLM_PROVIDER", "ollama").strip().lower()
+    is_hf_space = "SPACE_ID" in os.environ
+    default_provider = "groq" if is_hf_space else "ollama"
+    provider_name = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
     
     if provider_name == "groq":
         return GroqProvider()

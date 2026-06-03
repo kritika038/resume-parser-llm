@@ -38,7 +38,16 @@ import os
 import requests
 
 # ========== PROVIDER VALIDATION & HEALTH CHECKS ==========
-provider = os.environ.get("LLM_PROVIDER", "ollama").strip().lower()
+is_hf_space = "SPACE_ID" in os.environ
+default_provider = "groq" if is_hf_space else "ollama"
+provider = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
+
+# Render System Diagnostics in the sidebar at the top of configuration
+st.sidebar.markdown("### 🔌 System Diagnostics")
+st.sidebar.write(f"**Environment**: `{'Hugging Face Space' if is_hf_space else 'Local Machine'}`")
+st.sidebar.write(f"**Active Provider**: `{provider.upper()}`")
+st.sidebar.write(f"**Groq API Key**: `{'Configured' if os.environ.get('GROQ_API_KEY') else 'Missing'}`")
+st.sidebar.divider()
 
 if provider == "groq":
     groq_key = os.environ.get("GROQ_API_KEY")
@@ -46,8 +55,8 @@ if provider == "groq":
         st.sidebar.error("⚠️ Groq API Key Missing!")
         st.error("### 🔑 Groq API Key Required")
         st.warning(
-            "This space is configured to run cloud-hosted LLM analysis via **Groq**, but no "
-            "valid `GROQ_API_KEY` was found in the environment secrets.\n\n"
+            "This application is configured to run cloud-hosted LLM analysis via **Groq**, but no "
+            "valid `GROQ_API_KEY` was found in the environment variables or secrets.\n\n"
             "**How to configure on Hugging Face Spaces:**\n"
             "1. Open your Space **Settings**.\n"
             "2. Scroll down to the **Variables and secrets** section.\n"

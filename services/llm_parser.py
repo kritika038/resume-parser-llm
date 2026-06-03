@@ -30,7 +30,9 @@ def call_llm(prompt: str) -> Optional[str]:
         str: Raw LLM completion text
         None: If both primary and fallback providers fail
     """
-    primary_provider_name = os.environ.get("LLM_PROVIDER", "ollama").strip().lower()
+    is_hf_space = "SPACE_ID" in os.environ
+    default_provider = "groq" if is_hf_space else "ollama"
+    primary_provider_name = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
     
     # 1. Attempt Primary provider execution
     try:
