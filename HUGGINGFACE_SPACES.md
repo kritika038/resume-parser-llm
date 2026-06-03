@@ -29,7 +29,7 @@ To authorize LLM inference without hardcoding credentials in your public source 
     *   **Value**: `your_actual_groq_api_key` (e.g. `gsk_...` obtained from console.groq.com).
 4.  *(Optional)* You can also specify custom models or endpoints:
     *   **Name**: `GROQ_MODEL`
-    *   **Value**: `llama3-8b-8192` (Default) or `mixtral-8x7b-32768`.
+    *   **Value**: `llama-3.1-8b-instant` (Default) or `mixtral-8x7b-32768`.
 
 ---
 

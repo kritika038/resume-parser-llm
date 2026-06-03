@@ -69,7 +69,7 @@ if provider == "groq":
         st.stop()
     else:
         st.sidebar.success("🟢 Connected to Groq Cloud")
-        st.sidebar.caption(f"Active Model: `{os.environ.get('GROQ_MODEL', 'llama3-8b-8192')}`")
+        st.sidebar.caption(f"Active Model: `{os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')}`")
 elif provider == "ollama":
     ollama_url = os.environ.get("OLLAMA_API_URL", "http://localhost:11434/api/generate")
     try:

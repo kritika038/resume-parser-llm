@@ -41,7 +41,7 @@ Follow these setup guidelines inside the Hugging Face Console:
     *   *Automatic Defaulting*: If running on Hugging Face Spaces (detected via `SPACE_ID`), the platform automatically defaults `LLM_PROVIDER` to `groq`.
     *   *(Optional)* Add **Variable**: `LLM_PROVIDER = groq` (explicitly forces the platform to run high-speed cloud Groq LPU parsers).
     *   Add **Secret**: `GROQ_API_KEY = gsk_...` (protects your personal Groq access token from public exposure; required for Groq Cloud execution).
-    *   *(Optional)* Add **Variable**: `GROQ_MODEL = llama3-8b-8192` (targets the high-speed Llama-3 model).
+    *   *(Optional)* Add **Variable**: `GROQ_MODEL = llama-3.1-8b-instant` (targets the high-speed Llama-3.1 model).
 
 ---
 
