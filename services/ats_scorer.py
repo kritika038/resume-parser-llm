@@ -19,8 +19,8 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
     - Education Section (15)
     - Experience Section (20)
     - Projects Section (15)
-    - Resume Structure (10)
-    - Keyword Coverage (10)
+    - Formatting / Structure (10)
+    - Keywords (10)
     
     Maximum = 100
     
@@ -35,41 +35,46 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
         logger.warning("Invalid resume data for ATS scoring")
         return 0
     
-    score = 0
+    contact_score = 0
+    skills_score = 0
+    edu_score = 0
+    exp_score = 0
+    proj_score = 0
+    structure_score = 0
+    keyword_score = 0
     
     # 1. Contact Information: 10 points
     # (5 points for email, 5 points for phone)
     email = resume_data.get("email")
     phone = resume_data.get("phone")
     if email and email != "N/A" and email.strip():
-        score += 5
+        contact_score += 5
         logger.debug("✓ Email present: +5")
     if phone and phone != "N/A" and phone.strip():
-        score += 5
+        contact_score += 5
         logger.debug("✓ Phone present: +5")
         
     # 2. Skills Section: 20 points
     skills = resume_data.get("skills", [])
     if isinstance(skills, list):
         if len(skills) > 0 and not all(s == "N/A" for s in skills):
-            score += 20
+            skills_score = 20
             logger.debug("✓ Skills present: +20")
     elif isinstance(skills, dict):
         has_skills = any(isinstance(v, list) and len(v) > 0 for v in skills.values())
         if has_skills:
-            score += 20
+            skills_score = 20
             logger.debug("✓ Skills present: +20")
             
     # 3. Education Section: 15 points
     education = resume_data.get("education", [])
     if isinstance(education, list) and len(education) > 0:
-        score += 15
+        edu_score = 15
         logger.debug("✓ Education present: +15")
         
     # 4. Experience Section: 20 points (Employment + Internships)
     employment = resume_data.get("employment", [])
     internships = resume_data.get("internships", [])
-    # Support backward compatibility with "experience" key
     experience = resume_data.get("experience", [])
     
     has_exp = False
@@ -81,16 +86,16 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
         has_exp = True
         
     if has_exp:
-        score += 20
+        exp_score = 20
         logger.debug("✓ Experience present: +20")
         
     # 5. Projects Section: 15 points
     projects = resume_data.get("projects", [])
     if isinstance(projects, list) and len(projects) > 0:
-        score += 15
+        proj_score = 15
         logger.debug("✓ Projects present: +15")
         
-    # 6. Resume Structure: 10 points
+    # 6. Resume Structure / Formatting: 10 points
     # Evaluates presence of core sections (Up to 10 points based on completeness of 6 major categories)
     sections_present = 0
     if resume_data.get("name") and resume_data.get("name") != "N/A":
@@ -109,15 +114,13 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
         sections_present += 1
         
     structure_score = int((sections_present / 6) * 10)
-    score += structure_score
     logger.debug(f"✓ Resume Structure Completeness ({sections_present}/6): +{structure_score}")
     
     # 7. Keyword Coverage: 10 points
     # (Scale keyword match score if available, or fall back to skill variety density)
     if keyword_match_score is not None:
-        coverage = min(10, int(keyword_match_score / 10))
-        score += coverage
-        logger.debug(f"✓ Keyword Match Coverage: +{coverage}")
+        keyword_score = min(10, int(keyword_match_score / 10))
+        logger.debug(f"✓ Keyword Match Coverage: +{keyword_score}")
     else:
         # Density fallback
         flat_skills = []
@@ -128,11 +131,28 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
                 if isinstance(s_list, list):
                     flat_skills.extend(s_list)
         skills_count = len([s for s in flat_skills if s != "N/A"])
-        coverage = min(10, skills_count)
-        score += coverage
-        logger.debug(f"✓ Skills Density Coverage ({skills_count}): +{coverage}")
+        keyword_score = min(10, skills_count)
+        logger.debug(f"✓ Skills Density Coverage ({skills_count}): +{keyword_score}")
         
-    final_score = min(score, 100)
+    final_score = min(contact_score + skills_score + edu_score + exp_score + proj_score + structure_score + keyword_score, 100)
+    
+    # Save the breakdown details in st.session_state["ats_breakdown"] for the debug panel
+    try:
+        import streamlit as st
+        if hasattr(st, "session_state"):
+            st.session_state["ats_breakdown"] = {
+                "Contact Information": contact_score,
+                "Education": edu_score,
+                "Skills": skills_score,
+                "Projects": proj_score,
+                "Experience": exp_score,
+                "Formatting": structure_score,
+                "Keywords": keyword_score,
+                "Total Score": final_score
+            }
+    except Exception as e:
+        logger.debug(f"Streamlit session_state not available: {e}")
+        
     logger.info(f"ATS Score calculated: {final_score}/100")
     return final_score
 

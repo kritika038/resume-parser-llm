@@ -123,7 +123,7 @@ class TestResumeIntelligenceServices(unittest.TestCase):
         """Verify factual validation layer: deduplication, technology filtering, and N/A conversion."""
         from utils.validators import clean_and_validate_resume
         
-        raw_resume_text = "Jane Developer has experience with Python, FastAPI, and Git. She worked at Tech Corp."
+        raw_resume_text = "Jane Developer has experience with Python, FastAPI, and Git. She worked at Tech Corp as a Software Engineer."
         parsed_data = {
             "name": "Jane Developer",
             "email": "jane@example.com",

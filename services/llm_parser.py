@@ -168,89 +168,123 @@ def generate_suggestions(resume_data: Dict[str, Any], jd_text: Optional[str] = N
 
 def generate_recruiter_summary(parsed_data: Dict[str, Any]) -> str:
     """
-    Generates a concise, professional 2-3 sentence recruiter executive summary of the candidate.
-    
-    Tries to generate utilizing the LLM first, falling back to a structured summary 
-    based on experience and skills if the LLM is unreachable or fails.
-    
-    Args:
-        parsed_data: Parsed resume dictionary
-        
-    Returns:
-        str: Recruiter executive summary of the candidate
+    Programmatically builds a strictly factual executive summary based on verified parsed details,
+    completely bypassing the LLM to prevent subjective recruiter language and hallucinations.
     """
     if not parsed_data or not isinstance(parsed_data, dict):
-        logger.warning("No candidate data available for summary")
         return "No candidate data available."
     
-    employment_list = parsed_data.get("employment", [])
-    internship_list = parsed_data.get("internships", [])
-    skills = parsed_data.get("skills", [])
-    name = parsed_data.get("name", "The Candidate")
+    name = parsed_data.get("name")
+    if not name or name == "N/A":
+        name = "The candidate"
+        
+    parts = []
     
-    # 1. Structured fallback function to ensure visual resilience
-    def get_structured_fallback():
-        flat_skills = []
-        if isinstance(skills, list):
-            flat_skills = skills
-        elif isinstance(skills, dict):
-            for skill_list in skills.values():
-                if isinstance(skill_list, list):
-                    flat_skills.extend(skill_list)
-        
-        top_skills = ", ".join(flat_skills[:6]) if flat_skills else "software development"
-        
-        if employment_list and isinstance(employment_list, list) and len(employment_list) > 0:
-            latest = employment_list[0]
-            role = latest.get("role", "Professional")
-            company = latest.get("company", "leading organization")
-            duration = latest.get("duration", "")
-            time_phrase = f" ({duration})" if (duration and duration != "N/A") else ""
-            
-            return f"{name} is a professional who most recently served as a {role} at {company}{time_phrase}. They possess key strengths in {top_skills}."
-        elif internship_list and isinstance(internship_list, list) and len(internship_list) > 0:
-            latest = internship_list[0]
-            role = latest.get("role", "Intern")
-            company = latest.get("company", "organization")
-            duration = latest.get("duration", "")
-            time_phrase = f" ({duration})" if (duration and duration != "N/A") else ""
-            
-            return f"{name} has internship experience as a {role} at {company}{time_phrase}, with key strengths in {top_skills}."
-        else:
-            return f"{name} is a candidate with experience specializing in {top_skills}."
+    # 1. Employment and Internship Experience
+    employment = parsed_data.get("employment", [])
+    internships = parsed_data.get("internships", [])
+    
+    experience_phrases = []
+    if employment and isinstance(employment, list):
+        for emp in employment[:2]:
+            role = emp.get("role", "N/A")
+            company = emp.get("company", "N/A")
+            duration = emp.get("duration", "N/A")
+            if role != "N/A" and company != "N/A":
+                dur_str = f" for {duration}" if (duration and duration != "N/A") else ""
+                experience_phrases.append(f"worked as a {role} at {company}{dur_str}")
+            elif role != "N/A":
+                experience_phrases.append(f"worked as a {role}")
+            elif company != "N/A":
+                experience_phrases.append(f"worked at {company}")
 
-    # 2. Try LLM summary generation
-    import json
-    prompt = f"""
-    You are a factual resume summarizer.
-    Analyze the following candidate's parsed resume data and generate a concise, cohesive 2-3 sentence Recruiter Executive Summary.
-    
-    STRICT RULES:
-    - The summary must be strictly factual and grounded ONLY in the provided resume data.
-    - Never include subjective praise, puffery, or fabricated claims (e.g. do NOT write "highly skilled AI specialist" or "expert" unless explicitly in the text).
-    - If the candidate is a student or has internship-only experience, present them accurately as such (e.g., "Student with internship experience in...").
-    - Only mention specific technologies, projects, and roles explicitly listed in the provided data.
-    - Keep it under 3 sentences.
-    - Do NOT include any markdown formatting, bullet points, greetings, introductory filler, or surrounding quotes.
-    - Output only the plain text summary.
-    
-    Candidate Name: {name}
-    Skills: {json.dumps(skills)}
-    Employment: {json.dumps(employment_list[:3])}
-    Internships: {json.dumps(internship_list[:3])}
-    Projects: {json.dumps(parsed_data.get('projects', [])[:3])}
-    """
-    
-    logger.info("Requesting LLM-generated recruiter executive summary...")
-    raw_summary = call_llm(prompt)
-    
-    if raw_summary and raw_summary.strip():
-        clean_sum = raw_summary.strip().replace('"', '').replace('**', '').replace('Executive Summary:', '')
-        # Basic bounds-checking to filter out system responses
-        if len(clean_sum) > 20 and not clean_sum.lower().startswith("here is"):
-            logger.info("Recruiter summary generated successfully via LLM")
-            return clean_sum
+    if internships and isinstance(internships, list):
+        for item in internships[:2]:
+            role = item.get("role", "N/A")
+            company = item.get("company", "N/A")
+            duration = item.get("duration", "N/A")
+            if role != "N/A" and company != "N/A":
+                dur_str = f" for {duration}" if (duration and duration != "N/A") else ""
+                experience_phrases.append(f"completed an internship as a {role} at {company}{dur_str}")
+            elif role != "N/A":
+                experience_phrases.append(f"completed a {role} internship")
+            elif company != "N/A":
+                experience_phrases.append(f"completed an internship at {company}")
+
+    if experience_phrases:
+        if len(experience_phrases) == 1:
+            parts.append(f"{name} has {experience_phrases[0]}.")
+        else:
+            parts.append(f"{name} has {experience_phrases[0]} and {experience_phrases[1]}.")
             
-    logger.warning("LLM summary generation unavailable or invalid; using high-quality structured fallback.")
-    return get_structured_fallback()
+    # 2. Education
+    education = parsed_data.get("education", [])
+    edu_phrases = []
+    if education and isinstance(education, list):
+        for edu in education[:2]:
+            degree = edu.get("degree", "N/A")
+            field = edu.get("field", "N/A")
+            institution = edu.get("institution", "N/A")
+            
+            deg_field = ""
+            if degree != "N/A" and field != "N/A":
+                deg_field = f"{degree} in {field}"
+            elif degree != "N/A":
+                deg_field = degree
+            elif field != "N/A":
+                deg_field = f"degree in {field}"
+                
+            if deg_field and institution != "N/A":
+                edu_phrases.append(f"a {deg_field} from {institution}")
+            elif deg_field:
+                edu_phrases.append(f"a {deg_field}")
+            elif institution != "N/A":
+                edu_phrases.append(f"studies at {institution}")
+                
+    if edu_phrases:
+        if len(edu_phrases) == 1:
+            parts.append(f"Their education includes {edu_phrases[0]}.")
+        else:
+            parts.append(f"Their education includes {edu_phrases[0]} and {edu_phrases[1]}.")
+            
+    # 3. Skills
+    skills = parsed_data.get("skills", [])
+    flat_skills = []
+    if isinstance(skills, list):
+        flat_skills = [s for s in skills if s and s != "N/A"]
+    elif isinstance(skills, dict):
+        for val in skills.values():
+            if isinstance(val, list):
+                flat_skills.extend([s for s in val if s and s != "N/A"])
+                
+    if flat_skills:
+        # deduplicate while keeping order
+        seen = set()
+        deduped_skills = []
+        for s in flat_skills:
+            s_lower = s.lower()
+            if s_lower not in seen:
+                seen.add(s_lower)
+                deduped_skills.append(s)
+        skills_str = ", ".join(deduped_skills[:8])
+        parts.append(f"Listed skills include: {skills_str}.")
+        
+    # 4. Projects
+    projects = parsed_data.get("projects", [])
+    proj_names = []
+    if projects and isinstance(projects, list):
+        for proj in projects[:2]:
+            p_name = proj.get("name", "N/A")
+            if p_name != "N/A":
+                proj_names.append(p_name)
+    if proj_names:
+        if len(proj_names) == 1:
+            parts.append(f"Completed projects include {proj_names[0]}.")
+        else:
+            parts.append(f"Completed projects include {', and '.join(proj_names)}.")
+        
+    if not parts:
+        return f"Resume data parsed for {name} with no specific employment, education, or skills listed."
+        
+    return " ".join(parts)
 

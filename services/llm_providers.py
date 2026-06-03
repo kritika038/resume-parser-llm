@@ -118,7 +118,8 @@ class GroqProvider(LLMProvider):
                     }
                 ],
                 model=self.model,
-                temperature=0.1
+                temperature=0.0,
+                top_p=0.1
             )
 
             output = chat_completion.choices[0].message.content

@@ -321,12 +321,12 @@ if mode == "Single Resume":
             # If Show Raw LLM Response is checked, show debug metrics & raw JSON
             if show_raw_response:
                 st.divider()
-                st.subheader("🤖 Raw LLM Response & Diagnostics")
+                st.subheader("🕵️‍♂️ Debug & Verification Panel")
                 
                 # Token count
                 token_usage = st.session_state.get("token_usage")
                 if token_usage:
-                    st.markdown("**Extracted Token Counts:**")
+                    st.markdown("**LLM Token Usage:**")
                     col_t1, col_t2, col_t3 = st.columns(3)
                     with col_t1:
                         st.metric("Prompt Tokens", token_usage.get("prompt_tokens", 0))
@@ -334,23 +334,43 @@ if mode == "Single Resume":
                         st.metric("Completion Tokens", token_usage.get("completion_tokens", 0))
                     with col_t3:
                         st.metric("Total Tokens", token_usage.get("total_tokens", 0))
-                else:
-                    st.info("No token count metrics available for this run.")
-                    
-                # Parsing errors
-                parsing_error = st.session_state.get("parsing_error")
-                if parsing_error:
-                    st.error(f"⚠️ Parsing Error: {parsing_error}")
-                else:
-                    st.success("🟢 No parsing errors encountered.")
-                    
-                # Raw response
-                raw_output = st.session_state.get("raw_llm_response")
-                if raw_output:
-                    st.markdown("**Raw JSON Response:**")
-                    st.code(raw_output, language="json")
-                else:
-                    st.info("No raw response data found.")
+                
+                # 1. Show Raw Resume Text
+                with st.expander("📄 Show Raw Resume Text", expanded=False):
+                    if resume_text:
+                        st.text_area("Raw Resume Text", value=resume_text, height=300, disabled=True)
+                    else:
+                        st.info("No raw resume text available.")
+                        
+                # 2. Show Raw LLM JSON
+                with st.expander("🤖 Show Raw LLM JSON", expanded=False):
+                    raw_output = st.session_state.get("raw_llm_response")
+                    if raw_output:
+                        st.code(raw_output, language="json")
+                    else:
+                        st.info("No raw LLM response found.")
+                        
+                # 3. Show Extracted Entities
+                with st.expander("🔍 Show Extracted Entities", expanded=False):
+                    if parsed_data:
+                        st.json(parsed_data)
+                    else:
+                        st.info("No verified entities payload available.")
+                        
+                # 4. Show ATS Calculation
+                with st.expander("📊 Show ATS Calculation", expanded=False):
+                    ats_breakdown = st.session_state.get("ats_breakdown")
+                    if ats_breakdown:
+                        # Render metrics in two rows of 4 columns
+                        items = list(ats_breakdown.items())
+                        col_row1 = st.columns(4)
+                        for col, (metric_name, metric_val) in zip(col_row1, items[:4]):
+                            col.metric(label=metric_name, value=metric_val)
+                        col_row2 = st.columns(4)
+                        for col, (metric_name, metric_val) in zip(col_row2, items[4:]):
+                            col.metric(label=metric_name, value=metric_val)
+                    else:
+                        st.info("No ATS score calculation details found.")
         except Exception as e:
             logger.error(f"Critical single resume processing exception: {e}", exc_info=True)
             st.error("❌ A Critical Processing Error Occurred")

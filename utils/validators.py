@@ -201,71 +201,148 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
     # Verify basic schema properties
     validate_resume_schema(data)
     
-    # 1. Deduplicate and filter inferred technologies for skills
-    skills = data.get("skills", [])
-    if isinstance(skills, list):
-        cleaned_skills = []
-        seen = set()
-        for s in skills:
-            if not s or not isinstance(s, str):
-                continue
-            s_clean = s.strip()
-            s_lower = s_clean.lower()
-            if s_lower not in seen and s_lower != "null" and s_lower != "none":
-                if is_skill_in_resume(s_clean, resume_text):
-                    seen.add(s_lower)
-                    cleaned_skills.append(s_clean)
-        data["skills"] = cleaned_skills
-    elif isinstance(skills, dict):
-        for cat, s_list in list(skills.items()):
-            if isinstance(s_list, list):
-                cleaned_cat_skills = []
-                seen = set()
-                for s in s_list:
-                    if not s or not isinstance(s, str):
-                        continue
-                    s_clean = s.strip()
-                    s_lower = s_clean.lower()
-                    if s_lower not in seen and s_lower != "null" and s_lower != "none":
-                        if is_skill_in_resume(s_clean, resume_text):
-                            seen.add(s_lower)
-                            cleaned_cat_skills.append(s_clean)
-                skills[cat] = cleaned_cat_skills
-                
-    # Deduplicate languages and certifications
-    for list_key in ["languages", "certifications"]:
-        lst = data.get(list_key, [])
-        if isinstance(lst, list):
-            cleaned_lst = []
-            seen = set()
-            for x in lst:
-                if x and isinstance(x, str):
-                    x_clean = x.strip()
-                    x_lower = x_clean.lower()
-                    if x_lower not in seen and x_lower != "null" and x_lower != "none":
-                        seen.add(x_lower)
-                        cleaned_lst.append(x_clean)
-            data[list_key] = cleaned_lst
-            
-    # 2. Remove empty/blank records
-    data["education"] = clean_empty_records(data.get("education", []), ["degree", "field", "institution", "year"])
-    data["internships"] = clean_empty_records(data.get("internships", []), ["role", "company", "duration", "responsibilities"])
-    data["employment"] = clean_empty_records(data.get("employment", []), ["role", "company", "duration", "responsibilities"])
-    data["experience"] = clean_empty_records(data.get("experience", []), ["role", "company", "duration", "responsibilities"])
-    data["projects"] = clean_empty_records(data.get("projects", []), ["name", "tech_stack", "summary", "impact"])
+    resume_lower = resume_text.lower()
     
-    # 3. Convert all missing values, None, empty strings, "null", "none" to "N/A"
-    for k, v in list(data.items()):
-        if k in ["skills", "languages", "certifications", "education", "internships", "employment", "experience", "projects", "contact"]:
-            if isinstance(v, list):
-                for idx, item in enumerate(v):
-                    if isinstance(item, dict):
-                        v[idx] = {key: convert_nulls_to_na(val) for key, val in item.items()}
-            elif isinstance(v, dict):
-                data[k] = {key: convert_nulls_to_na(val) for key, val in v.items()}
-        else:
-            data[k] = convert_nulls_to_na(v)
+    # Helper to verify any text value exists in the resume text
+    def verify_field(val: Any) -> Any:
+        if val is None:
+            return "N/A"
+        val_str = str(val).strip()
+        val_stripped_lower = val_str.lower()
+        if not val_str or val_stripped_lower in ["n/a", "null", "none", ""]:
+            return "N/A"
+        
+        # Check substring match
+        if val_stripped_lower in resume_lower:
+            return val_str
             
+        # Check individual words (minimum 3 characters)
+        words = re.findall(r'[a-zA-Z0-9#\+\-]+', val_stripped_lower)
+        if words:
+            # If at least one significant word is in resume_lower, consider it verified
+            matched_words = [w for w in words if len(w) >= 3 and w in resume_lower]
+            if len(matched_words) > 0:
+                return val_str
+                
+        # Check synonyms registry for skills
+        try:
+            from services.skill_gap_analyzer import SKILL_SYNONYMS
+            for syn, canonical in SKILL_SYNONYMS.items():
+                if canonical.lower() == val_stripped_lower:
+                    if syn.lower() in resume_lower:
+                        return val_str
+        except Exception:
+            pass
+                    
+        return "N/A"
+        
+    # 1. Verify and clean root fields
+    for field in ["name", "email", "phone", "location", "linkedin", "github", "summary", "experience_years"]:
+        val = data.get(field)
+        verified = verify_field(val)
+        data[field] = verified
+        
+    # 2. Verify and deduplicate skills, certifications, languages
+    for list_key in ["skills", "certifications", "languages"]:
+        lst = data.get(list_key, [])
+        cleaned_list = []
+        seen = set()
+        for x in lst:
+            if x:
+                verified_val = verify_field(x)
+                if verified_val != "N/A":
+                    val_lower = verified_val.lower()
+                    if val_lower not in seen:
+                        seen.add(val_lower)
+                        cleaned_list.append(verified_val)
+        data[list_key] = cleaned_list
+        
+    # 3. Clean education records
+    cleaned_edu = []
+    for edu in data.get("education", []):
+        if not isinstance(edu, dict):
+            continue
+        cleaned_rec = {
+            "degree": verify_field(edu.get("degree")),
+            "field": verify_field(edu.get("field")),
+            "institution": verify_field(edu.get("institution")),
+            "year": verify_field(edu.get("year"))
+        }
+        # A record is valid if at least degree or institution is present
+        if cleaned_rec["degree"] != "N/A" or cleaned_rec["institution"] != "N/A":
+            cleaned_edu.append(cleaned_rec)
+    data["education"] = cleaned_edu
+    
+    # 4. Clean internships records
+    cleaned_int = []
+    for item in data.get("internships", []):
+        if not isinstance(item, dict):
+            continue
+        resps = item.get("responsibilities", [])
+        verified_resps = []
+        if isinstance(resps, list):
+            for r in resps:
+                v_r = verify_field(r)
+                if v_r != "N/A":
+                    verified_resps.append(v_r)
+                    
+        cleaned_rec = {
+            "role": verify_field(item.get("role")),
+            "company": verify_field(item.get("company")),
+            "duration": verify_field(item.get("duration")),
+            "responsibilities": verified_resps
+        }
+        if cleaned_rec["role"] != "N/A" or cleaned_rec["company"] != "N/A":
+            cleaned_int.append(cleaned_rec)
+    data["internships"] = cleaned_int
+    
+    # 5. Clean employment records
+    cleaned_emp = []
+    for item in data.get("employment", []):
+        if not isinstance(item, dict):
+            continue
+        resps = item.get("responsibilities", [])
+        verified_resps = []
+        if isinstance(resps, list):
+            for r in resps:
+                v_r = verify_field(r)
+                if v_r != "N/A":
+                    verified_resps.append(v_r)
+                    
+        cleaned_rec = {
+            "role": verify_field(item.get("role")),
+            "company": verify_field(item.get("company")),
+            "duration": verify_field(item.get("duration")),
+            "responsibilities": verified_resps
+        }
+        if cleaned_rec["role"] != "N/A" or cleaned_rec["company"] != "N/A":
+            cleaned_emp.append(cleaned_rec)
+    data["employment"] = cleaned_emp
+    data["experience"] = cleaned_emp
+    
+    # 6. Clean projects records
+    cleaned_proj = []
+    for item in data.get("projects", []):
+        if not isinstance(item, dict):
+            continue
+        tech = item.get("tech_stack", [])
+        verified_tech = []
+        if isinstance(tech, list):
+            for t in tech:
+                v_t = verify_field(t)
+                if v_t != "N/A":
+                    verified_tech.append(v_t)
+                    
+        cleaned_rec = {
+            "name": verify_field(item.get("name")),
+            "tech_stack": verified_tech,
+            "summary": verify_field(item.get("summary")),
+            "impact": verify_field(item.get("impact"))
+        }
+        if cleaned_rec["name"] != "N/A":
+            cleaned_proj.append(cleaned_rec)
+    data["projects"] = cleaned_proj
+    
     return data
 
 

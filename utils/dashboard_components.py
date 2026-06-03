@@ -445,55 +445,45 @@ def render_experience_timeline(experience_list: List[Dict[str, Any]]):
 
 def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
     """
-    Attempts to calculate total tenure or duration based on candidate history.
+    Attempts to calculate total tenure strictly based on candidate professional employment history.
+    Does not include internships in the tenure calculation.
     """
     if not parsed_data_or_list:
         return "Not Available"
         
-    experience_list = []
+    employment_list = []
+    internship_list = []
     
-    # Check if a dictionary or list is passed
     if isinstance(parsed_data_or_list, dict):
-        # First, check if there is an explicit experience_years field
-        exp_years = parsed_data_or_list.get("experience_years")
-        if exp_years is not None and exp_years != "N/A":
-            try:
-                val = float(exp_years)
-                if val > 0:
-                    years_int = int(val)
-                    months_int = int((val - years_int) * 12)
-                    if years_int > 0:
-                        return f"{years_int}+ Years" if months_int < 3 else f"{years_int}.{int(months_int/1.2)} Years"
-                    else:
-                        return f"{int(months_int)} Months"
-            except (ValueError, TypeError):
-                if isinstance(exp_years, str) and exp_years.strip() and exp_years.strip().lower() not in ["null", "none", "n/a"]:
-                    return exp_years.strip()
-                    
-        # Check employment and internships list fields
+        # We strictly compute years from professional employment / experience records, NOT internships
         if isinstance(parsed_data_or_list.get("employment"), list):
-            experience_list.extend(parsed_data_or_list["employment"])
+            employment_list = parsed_data_or_list["employment"]
+        elif isinstance(parsed_data_or_list.get("experience"), list):
+            employment_list = parsed_data_or_list["experience"]
+            
         if isinstance(parsed_data_or_list.get("internships"), list):
-            experience_list.extend(parsed_data_or_list["internships"])
-        # Support old key
-        if not experience_list and isinstance(parsed_data_or_list.get("experience"), list):
-            experience_list.extend(parsed_data_or_list["experience"])
+            internship_list = parsed_data_or_list["internships"]
     elif isinstance(parsed_data_or_list, list):
-        experience_list = parsed_data_or_list
+        employment_list = parsed_data_or_list
     else:
         return "Not Available"
         
-    if not experience_list:
+    # Check if ONLY internships exist
+    if not employment_list and internship_list:
+        return "Internship Experience Only"
+        
+    if not employment_list:
         return "Not Available"
         
     import re
     total_years = 0.0
+    has_valid_duration = False
     
-    for exp in experience_list:
-        if not isinstance(exp, dict):
+    for emp in employment_list:
+        if not isinstance(emp, dict):
             continue
-        duration = exp.get("duration", "")
-        if not duration or duration == "N/A":
+        duration = emp.get("duration", "")
+        if not duration or duration == "N/A" or duration.strip() == "":
             continue
             
         # Parse common formats: "X years", "Y months", "X yrs", "2019 - 2022"
@@ -505,6 +495,7 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
                 end = int(year_matches[1])
                 diff = abs(end - start)
                 total_years += diff if diff > 0 else 0.5
+                has_valid_duration = True
                 continue
             except ValueError:
                 pass
@@ -514,6 +505,7 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
         if years_match:
             try:
                 total_years += float(years_match.group(1))
+                has_valid_duration = True
                 continue
             except ValueError:
                 pass
@@ -523,9 +515,14 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
         if months_match:
             try:
                 total_years += float(months_match.group(1)) / 12.0
+                has_valid_duration = True
             except ValueError:
                 pass
                 
+    if not has_valid_duration:
+        # If all employment dates/durations are missing/unparseable, return "Not Available"
+        return "Not Available"
+        
     if total_years > 0:
         years_int = int(total_years)
         months_int = int((total_years - years_int) * 12)
