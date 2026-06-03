@@ -195,120 +195,119 @@ if mode == "Single Resume":
                 3. Ensure the uploaded resume contains readable, copy-pasteable English text.
                 """)
                 st.stop()
-        
-        # Calculate metrics
-        with st.spinner("📊 Calculating scores..."):
-            ats_score = calculate_ats_score(parsed_data)
-            
-            if jd_text and jd_text.strip():
-                combined_score, matched_skills, match_details = combined_match_score(
-                    parsed_data.get("skills", {}),
-                    resume_text,
-                    jd_text,
-                    keyword_weight=0.4,
-                    semantic_weight=0.6
-                )
-                jd_match_score = combined_score
-                keyword_match_score = match_details.get("keyword_score", 0)
-                semantic_match_score = match_details.get("semantic_score", 0)
-            else:
-                jd_match_score = 0
-                keyword_match_score = 0
-                semantic_match_score = 0
-                matched_skills = []
-            
-            skill_gaps = identify_skill_gaps(parsed_data.get("skills", {}), jd_text) if jd_text else []
-        
-        # Generate suggestions
-        with st.spinner("💡 Generating recommendations..."):
-            suggestions = generate_suggestions(parsed_data, jd_text)
-        
-        st.success("✅ Resume analysis complete!")
-        st.divider()
-        
-        # ========== RESULTS DISPLAY ==========
-        st.header("📊 Analysis Results")
-        
-        # Results Tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "💼 Recruiter Dashboard",
-            "📈 Detailed Scores & Gaps",
-            "📄 Full JSON",
-            "💡 AI Suggestions",
-            "⬇️ Export"
-        ])
-        
-        with tab1:
-            match_details = {
-                "keyword_score": keyword_match_score,
-                "semantic_similarity": semantic_match_score / 100.0 if semantic_match_score else 0.0,
-                "matched_skills": matched_skills
-            }
-            render_recruiter_dashboard(
-                parsed_data=parsed_data,
-                ats_score=ats_score,
-                jd_match_score=jd_match_score,
-                match_details=match_details,
-                skill_gaps=skill_gaps,
-                resume_text=resume_text,
-                jd_text=jd_text
-            )
-        
-        with tab2:
-            col_l, col_r = st.columns([1, 1])
-            
-            with col_l:
-                st.subheader("ATS Compatibility")
-                st.write(f"**Score:** {ats_score}/100")
-                st.write(f"**Assessment:** {get_ats_interpretation(ats_score)}")
+            # Calculate metrics
+            with st.spinner("📊 Calculating scores..."):
+                ats_score = calculate_ats_score(parsed_data)
                 
-                missing = get_missing_ats_elements(parsed_data)
-                if missing:
-                    st.warning("Missing elements:")
-                    for item in missing:
-                        st.write(f"• {item}")
+                if jd_text and jd_text.strip():
+                    combined_score, matched_skills, match_details = combined_match_score(
+                        parsed_data.get("skills", {}),
+                        resume_text,
+                        jd_text,
+                        keyword_weight=0.4,
+                        semantic_weight=0.6
+                    )
+                    jd_match_score = combined_score
+                    keyword_match_score = match_details.get("keyword_score", 0)
+                    semantic_match_score = match_details.get("semantic_score", 0)
                 else:
-                    st.success("All elements present!")
+                    jd_match_score = 0
+                    keyword_match_score = 0
+                    semantic_match_score = 0
+                    matched_skills = []
+                
+                skill_gaps = identify_skill_gaps(parsed_data.get("skills", {}), jd_text) if jd_text else []
             
-            with col_r:
-                if jd_text:
-                    st.subheader("Job Description Match")
-                    st.write(f"**Combined:** {jd_match_score}%")
-                    st.write(f"**Assessment:** {get_jd_match_interpretation(jd_match_score)}")
+            # Generate suggestions
+            with st.spinner("💡 Generating recommendations..."):
+                suggestions = generate_suggestions(parsed_data, jd_text)
+            
+            st.success("✅ Resume analysis complete!")
+            st.divider()
+            
+            # ========== RESULTS DISPLAY ==========
+            st.header("📊 Analysis Results")
+            
+            # Results Tabs
+            tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                "💼 Recruiter Dashboard",
+                "📈 Detailed Scores & Gaps",
+                "📄 Full JSON",
+                "💡 AI Suggestions",
+                "⬇️ Export"
+            ])
+            
+            with tab1:
+                match_details = {
+                    "keyword_score": keyword_match_score,
+                    "semantic_similarity": semantic_match_score / 100.0 if semantic_match_score else 0.0,
+                    "matched_skills": matched_skills
+                }
+                render_recruiter_dashboard(
+                    parsed_data=parsed_data,
+                    ats_score=ats_score,
+                    jd_match_score=jd_match_score,
+                    match_details=match_details,
+                    skill_gaps=skill_gaps,
+                    resume_text=resume_text,
+                    jd_text=jd_text
+                )
+            
+            with tab2:
+                col_l, col_r = st.columns([1, 1])
+                
+                with col_l:
+                    st.subheader("ATS Compatibility")
+                    st.write(f"**Score:** {ats_score}/100")
+                    st.write(f"**Assessment:** {get_ats_interpretation(ats_score)}")
                     
-                    st.divider()
-                    col_s1, col_s2 = st.columns(2)
-                    with col_s1:
-                        st.metric("Keyword", f"{keyword_match_score}%")
-                    with col_s2:
-                        st.metric("Semantic", f"{semantic_match_score}%")
-                    
-                    if matched_skills:
-                        st.success(f"**Matched ({len(matched_skills)}):** {', '.join(matched_skills)}")
-                    
-                    if skill_gaps:
-                        st.warning(f"**Gaps ({len(skill_gaps)}):** {', '.join(skill_gaps)}")
+                    missing = get_missing_ats_elements(parsed_data)
+                    if missing:
+                        st.warning("Missing elements:")
+                        for item in missing:
+                            st.write(f"• {item}")
+                    else:
+                        st.success("All elements present!")
+                
+                with col_r:
+                    if jd_text:
+                        st.subheader("Job Description Match")
+                        st.write(f"**Combined:** {jd_match_score}%")
+                        st.write(f"**Assessment:** {get_jd_match_interpretation(jd_match_score)}")
+                        
+                        st.divider()
+                        col_s1, col_s2 = st.columns(2)
+                        with col_s1:
+                            st.metric("Keyword", f"{keyword_match_score}%")
+                        with col_s2:
+                            st.metric("Semantic", f"{semantic_match_score}%")
+                        
+                        if matched_skills:
+                            st.success(f"**Matched ({len(matched_skills)}):** {', '.join(matched_skills)}")
+                        
+                        if skill_gaps:
+                            st.warning(f"**Gaps ({len(skill_gaps)}):** {', '.join(skill_gaps)}")
+                    else:
+                        st.info("💡 Provide a JD for skill matching")
+            
+            with tab3:
+                st.json(parsed_data)
+            
+            with tab4:
+                if suggestions:
+                    st.write(suggestions)
                 else:
-                    st.info("💡 Provide a JD for skill matching")
-        
-        with tab3:
-            st.json(parsed_data)
-        
-        with tab4:
-            if suggestions:
-                st.write(suggestions)
-            else:
-                st.warning("Could not generate suggestions.")
-        
-        with tab5:
-            json_str = json.dumps(parsed_data, indent=2)
-            st.download_button(
-                "📥 JSON",
-                data=json_str,
-                file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
-                mime="application/json",
-                use_container_width=True
-            )
+                    st.warning("Could not generate suggestions.")
+            
+            with tab5:
+                json_str = json.dumps(parsed_data, indent=2)
+                st.download_button(
+                    "📥 JSON",
+                    data=json_str,
+                    file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
         except Exception as e:
             logger.error(f"Critical single resume processing exception: {e}", exc_info=True)
             st.error("❌ A Critical Processing Error Occurred")
@@ -360,165 +359,165 @@ else:
     if st.button("🔍 Analyze & Compare", use_container_width=True, key="analyze_bulk"):
         try:
             if not jd_bulk or not jd_bulk.strip():
-            st.error("❌ Please provide a job description")
-            st.stop()
-        
-        if not use_demo and not uploaded_files:
-            st.error("❌ Please upload at least one resume")
-            st.stop()
-        
-        # Initialize comparator
-        comparator = CandidateComparator()
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        successful = 0
-        failed = 0
-        
-        # Determine files to process
-        files_to_process = []
-        if use_demo:
-            files_to_process = [
-                {"name": "Alice_Dev.pdf", "path": "scratch/Alice_Dev.pdf"},
-                {"name": "Bob_Coder.pdf", "path": "scratch/Bob_Coder.pdf"},
-                {"name": "Charlie_ML.pdf", "path": "scratch/Charlie_ML.pdf"}
-            ]
-        else:
-            files_to_process = [{"name": f.name, "file": f} for f in uploaded_files]
-        
-        # Process each resume
-        for idx, item in enumerate(files_to_process):
-            status_text.text(f"Processing: {item['name']} ({idx + 1}/{len(files_to_process)})")
+                st.error("❌ Please provide a job description")
+                st.stop()
             
-            try:
-                if use_demo:
-                    with open(item["path"], "rb") as f:
-                        pdf_bytes = f.read()
-                else:
-                    pdf_bytes = item["file"].read()
+            if not use_demo and not uploaded_files:
+                st.error("❌ Please upload at least one resume")
+                st.stop()
+            
+            # Initialize comparator
+            comparator = CandidateComparator()
+            
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            successful = 0
+            failed = 0
+            
+            # Determine files to process
+            files_to_process = []
+            if use_demo:
+                files_to_process = [
+                    {"name": "Alice_Dev.pdf", "path": "scratch/Alice_Dev.pdf"},
+                    {"name": "Bob_Coder.pdf", "path": "scratch/Bob_Coder.pdf"},
+                    {"name": "Charlie_ML.pdf", "path": "scratch/Charlie_ML.pdf"}
+                ]
+            else:
+                files_to_process = [{"name": f.name, "file": f} for f in uploaded_files]
+            
+            # Process each resume
+            for idx, item in enumerate(files_to_process):
+                status_text.text(f"Processing: {item['name']} ({idx + 1}/{len(files_to_process)})")
+                
+                try:
+                    if use_demo:
+                        with open(item["path"], "rb") as f:
+                            pdf_bytes = f.read()
+                    else:
+                        pdf_bytes = item["file"].read()
+                        
+                    candidate_id = f"candidate_{idx + 1}"
+                    candidate_name = item["name"].replace(".pdf", "").replace("_", " ")
                     
-                candidate_id = f"candidate_{idx + 1}"
-                candidate_name = item["name"].replace(".pdf", "").replace("_", " ")
+                    comparator.add_pdf_resume(
+                        candidate_id,
+                        pdf_bytes,
+                        jd_bulk,
+                        candidate_name=candidate_name
+                    )
+                    successful += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {item['name']}: {e}")
+                    failed += 1
+                    st.warning(f"⚠️ Failed: {item['name']}")
                 
-                comparator.add_pdf_resume(
-                    candidate_id,
-                    pdf_bytes,
-                    jd_bulk,
-                    candidate_name=candidate_name
-                )
-                successful += 1
-                
-            except Exception as e:
-                logger.error(f"Error processing {item['name']}: {e}")
-                failed += 1
-                st.warning(f"⚠️ Failed: {item['name']}")
+                progress_bar.progress((idx + 1) / len(files_to_process))
             
-            progress_bar.progress((idx + 1) / len(files_to_process))
-        
-        status_text.text(f"✅ Processed: {successful}, Failed: {failed}")
-        
-        if successful == 0:
-            st.error("❌ No resumes successfully processed")
-            st.stop()
-        
-        st.success(f"✅ Analyzed {successful} candidate(s)")
-        st.divider()
-        
-        # ========== RESULTS DISPLAY ==========
-        st.header("📊 Candidate Rankings")
-        
-        # Map sort option to key
-        sort_map = {
-            "Overall Score": "overall",
-            "ATS Score": "ats",
-            "JD Match": "jd_match",
-            "Semantic Similarity": "semantic"
-        }
-        sort_key = sort_map[sort_option]
-        
-        # Get ranked candidates
-        ranked_candidates = comparator.get_ranked_candidates(sort_by=sort_key)
-        
-        # Render gorgeous visual leaderboard
-        render_bulk_leaderboard(ranked_candidates)
-        
-        st.divider()
-        
-        # ========== DETAILED ANALYSIS ==========
-        st.header("📋 Detailed Candidate Analysis")
-        
-        ranked_candidates = comparator.get_ranked_candidates(sort_by=sort_key)
-        
-        for rank, candidate in enumerate(ranked_candidates, 1):
-            with st.expander(
-                f"🏆 #{rank}: {candidate.name} "
-                f"(Overall: {candidate.overall_score:.1f})",
-                expanded=(rank == 1)
-            ):
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Overall", f"{candidate.overall_score:.1f}")
-                with col2:
-                    st.metric("ATS", f"{candidate.ats_score}/100")
-                with col3:
-                    st.metric("JD Match", f"{candidate.combined_jd_match}%")
-                with col4:
-                    st.metric("Semantic", f"{int(candidate.semantic_match * 100)}%")
-                
-                st.divider()
-                
-                col_info, col_score = st.columns(2)
-                
-                with col_info:
-                    st.write(f"**Email:** {candidate.email}")
-                    st.write(f"**Total Skills:** {candidate.total_skills}")
-                    st.write(f"**Matched:** {len(candidate.matched_skills)}")
-                
-                with col_score:
-                    st.write(f"**Keyword:** {candidate.keyword_match}%")
-                    st.write(f"**Semantic:** {candidate.semantic_match:.2%}")
-                    st.write(f"**ATS:** {get_ats_interpretation(candidate.ats_score)}")
-                
-                st.divider()
-                
-                col_skills, col_gaps = st.columns(2)
-                
-                with col_skills:
-                    st.write("**✅ Matched Skills:**")
-                    st.write(", ".join(candidate.matched_skills) if candidate.matched_skills else "None")
-                
-                with col_gaps:
-                    st.write("**❌ Skill Gaps:**")
-                    st.write(", ".join(candidate.skill_gaps) if candidate.skill_gaps else "None")
-        
-        st.divider()
-        
-        # ========== EXPORT OPTIONS ==========
-        st.header("⬇️ Export Results")
-        
-        col_j, col_c = st.columns(2)
-        
-        with col_j:
-            json_export = comparator.export_results(format="json")
-            st.download_button(
-                "📥 Download JSON",
-                data=json_export,
-                file_name="candidates.json",
-                mime="application/json",
-                use_container_width=True
-            )
-        
-        with col_c:
-            csv_export = comparator.export_results(format="csv")
-            st.download_button(
-                "📊 Download CSV",
-                data=csv_export,
-                file_name="candidates.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+            status_text.text(f"✅ Processed: {successful}, Failed: {failed}")
+            
+            if successful == 0:
+                st.error("❌ No resumes successfully processed")
+                st.stop()
+            
+            st.success(f"✅ Analyzed {successful} candidate(s)")
+            st.divider()
+            
+            # ========== RESULTS DISPLAY ==========
+            st.header("📊 Candidate Rankings")
+            
+            # Map sort option to key
+            sort_map = {
+                "Overall Score": "overall",
+                "ATS Score": "ats",
+                "JD Match": "jd_match",
+                "Semantic Similarity": "semantic"
+            }
+            sort_key = sort_map[sort_option]
+            
+            # Get ranked candidates
+            ranked_candidates = comparator.get_ranked_candidates(sort_by=sort_key)
+            
+            # Render gorgeous visual leaderboard
+            render_bulk_leaderboard(ranked_candidates)
+            
+            st.divider()
+            
+            # ========== DETAILED ANALYSIS ==========
+            st.header("📋 Detailed Candidate Analysis")
+            
+            ranked_candidates = comparator.get_ranked_candidates(sort_by=sort_key)
+            
+            for rank, candidate in enumerate(ranked_candidates, 1):
+                with st.expander(
+                    f"🏆 #{rank}: {candidate.name} "
+                    f"(Overall: {candidate.overall_score:.1f})",
+                    expanded=(rank == 1)
+                ):
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("Overall", f"{candidate.overall_score:.1f}")
+                    with col2:
+                        st.metric("ATS", f"{candidate.ats_score}/100")
+                    with col3:
+                        st.metric("JD Match", f"{candidate.combined_jd_match}%")
+                    with col4:
+                        st.metric("Semantic", f"{int(candidate.semantic_match * 100)}%")
+                    
+                    st.divider()
+                    
+                    col_info, col_score = st.columns(2)
+                    
+                    with col_info:
+                        st.write(f"**Email:** {candidate.email}")
+                        st.write(f"**Total Skills:** {candidate.total_skills}")
+                        st.write(f"**Matched:** {len(candidate.matched_skills)}")
+                    
+                    with col_score:
+                        st.write(f"**Keyword:** {candidate.keyword_match}%")
+                        st.write(f"**Semantic:** {candidate.semantic_match:.2%}")
+                        st.write(f"**ATS:** {get_ats_interpretation(candidate.ats_score)}")
+                    
+                    st.divider()
+                    
+                    col_skills, col_gaps = st.columns(2)
+                    
+                    with col_skills:
+                        st.write("**✅ Matched Skills:**")
+                        st.write(", ".join(candidate.matched_skills) if candidate.matched_skills else "None")
+                    
+                    with col_gaps:
+                        st.write("**❌ Skill Gaps:**")
+                        st.write(", ".join(candidate.skill_gaps) if candidate.skill_gaps else "None")
+            
+            st.divider()
+            
+            # ========== EXPORT OPTIONS ==========
+            st.header("⬇️ Export Results")
+            
+            col_j, col_c = st.columns(2)
+            
+            with col_j:
+                json_export = comparator.export_results(format="json")
+                st.download_button(
+                    "📥 Download JSON",
+                    data=json_export,
+                    file_name="candidates.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+            
+            with col_c:
+                csv_export = comparator.export_results(format="csv")
+                st.download_button(
+                    "📊 Download CSV",
+                    data=csv_export,
+                    file_name="candidates.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
         except Exception as e:
             logger.error(f"Critical bulk comparison exception: {e}", exc_info=True)
             st.error("❌ A Critical Bulk Processing Error Occurred")
