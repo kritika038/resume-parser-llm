@@ -3,70 +3,52 @@ Prompt templates for LLM-based resume parsing.
 Contains all prompt strings used for resume extraction and analysis.
 """
 
-PARSE_PROMPT = """
-You are a production-grade AI Resume Parser designed for precise and reliable information extraction.
+PARSE_PROMPT = """You are a resume information extraction engine.
 
-Return ONLY strictly valid JSON.
+Your task is to extract ONLY information explicitly present in the resume.
 
 STRICT RULES:
-- Output MUST start with { and end with }
-- No explanation, no markdown
-- Do NOT hallucinate
-- Arrays MUST NOT contain numeric indices (no 0:, 1:)
-- Use standard JSON arrays ["item1", "item2"]
-- Ensure JSON is directly parsable using json.loads()
-- All keys MUST be present even if empty
-- No trailing commas
+- Never infer missing information.
+- Never estimate years of experience.
+- Never invent skills.
+- Never create job titles.
+- Never create certifications.
+- Never assume technologies.
+- Never summarize beyond the provided text.
+- If information is missing, return null.
+- If experience duration is not explicitly written, return null.
+- Internship experience must remain internships.
+- Projects must remain projects.
+- Do not merge internships, projects, and employment.
+- Output valid JSON only.
+- No markdown.
+- No explanations.
 
-OUTPUT SCHEMA:
+Return schema:
 {
-  "name": "",
-  "contact": {
-    "email": "",
-    "phone": "",
-    "linkedin": "",
-    "github": ""
-  },
-  "education": [
-    {
-      "degree": "",
-      "field": "",
-      "institution": "",
-      "year": ""
-    }
-  ],
-  "skills": {
-    "languages": [],
-    "frameworks": [],
-    "tools": [],
-    "ai_ml": [],
-    "other": []
-  },
-  "experience": [
-    {
-      "role": "",
-      "company": "",
-      "duration": "",
-      "responsibilities": []
-    }
-  ],
-  "projects": [
-    {
-      "name": "",
-      "tech_stack": [],
-      "summary": "",
-      "impact": ""
-    }
-  ],
+  "name": null,
+  "email": null,
+  "phone": null,
+  "location": null,
+  "linkedin": null,
+  "github": null,
+  "skills": [],
+  "education": [],
+  "internships": [],
+  "employment": [],
+  "projects": [],
   "certifications": [],
-  "strengths": []
+  "languages": [],
+  "experience_years": null,
+  "summary": null
 }
 
-EXTRACTION GUIDELINES:
-- Normalize terms (JS → JavaScript, ML → Machine Learning)
-- Extract technologies from descriptions
-- Keep summaries short (1–2 lines)
-- Group skills logically
+Inner object schemas for array fields:
+- "education": list of objects, each with {"degree": null, "field": null, "institution": null, "year": null}
+- "internships": list of objects, each with {"role": null, "company": null, "duration": null, "responsibilities": []}
+- "employment": list of objects, each with {"role": null, "company": null, "duration": null, "responsibilities": []}
+- "projects": list of objects, each with {"name": null, "tech_stack": [], "summary": null, "impact": null}
+- "skills", "certifications", "languages": flat lists of strings
 """
 
 SUGGEST_PROMPT = """

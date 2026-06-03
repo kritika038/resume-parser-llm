@@ -222,16 +222,21 @@ def match_with_jd(skills_dict: Dict[str, Any], jd_text: Optional[str]) -> Tuple[
         logger.info("No job description provided, skipping JD matching")
         return 0, []
     
-    if not skills_dict or not isinstance(skills_dict, dict):
-        logger.warning("Invalid skills dictionary")
+    if not skills_dict:
         return 0, []
-    
-    # Aggregate all skills from all categories
+        
+    # Aggregate all skills depending on structure
     all_skills = []
-    for category, skill_list in skills_dict.items():
-        if isinstance(skill_list, list):
-            all_skills.extend(skill_list)
-    
+    if isinstance(skills_dict, dict):
+        for category, skill_list in skills_dict.items():
+            if isinstance(skill_list, list):
+                all_skills.extend(skill_list)
+    elif isinstance(skills_dict, list):
+        all_skills = skills_dict
+    else:
+        logger.warning(f"Invalid skills format: {type(skills_dict)}")
+        return 0, []
+        
     if not all_skills:
         logger.info("No skills found in resume")
         return 0, []
@@ -290,7 +295,9 @@ def identify_skill_gaps(skills_dict: Dict[str, Any], jd_text: Optional[str]) -> 
     if isinstance(skills_dict, dict):
         for skill_list in skills_dict.values():
             if isinstance(skill_list, list):
-                resume_skills.update(s.lower() for s in skill_list)
+                resume_skills.update(s.lower() for s in skill_list if s)
+    elif isinstance(skills_dict, list):
+        resume_skills.update(s.lower() for s in skills_dict if s)
     
     # Extract common tech keywords from JD
     tech_keywords = extract_tech_keywords(jd_text)

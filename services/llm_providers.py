@@ -58,6 +58,18 @@ class OllamaProvider(LLMProvider):
             result = response.json()
             output = result.get("response", "")
 
+            # Capture token usage for Ollama
+            import streamlit as st
+            prompt_tokens = result.get("prompt_eval_count", 0)
+            completion_tokens = result.get("eval_count", 0)
+            total_tokens = prompt_tokens + completion_tokens
+            if total_tokens > 0:
+                st.session_state["token_usage"] = {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": total_tokens
+                }
+
             if not output.strip():
                 logger.warning("Empty response from Ollama provider")
                 return None
@@ -110,6 +122,16 @@ class GroqProvider(LLMProvider):
             )
 
             output = chat_completion.choices[0].message.content
+            
+            # Capture token usage for Groq
+            import streamlit as st
+            if hasattr(chat_completion, "usage") and chat_completion.usage:
+                st.session_state["token_usage"] = {
+                    "prompt_tokens": chat_completion.usage.prompt_tokens,
+                    "completion_tokens": chat_completion.usage.completion_tokens,
+                    "total_tokens": chat_completion.usage.total_tokens
+                }
+
             if not output or not output.strip():
                 logger.warning("Empty response from Groq provider")
                 return None

@@ -102,7 +102,9 @@ class CandidateComparator:
             
             # Extract basic info
             name = candidate_name or parsed_data.get("name", f"Candidate {candidate_id}")
-            email = parsed_data.get("email", "Not found")
+            email = parsed_data.get("email") or parsed_data.get("contact", {}).get("email", "Not found")
+            if not email or email == "N/A":
+                email = "Not found"
             
             # Calculate scores
             ats_score = calculate_ats_score(parsed_data)
@@ -120,10 +122,16 @@ class CandidateComparator:
             
             skill_gaps = identify_skill_gaps(parsed_data.get("skills", {}), jd_text)
             
-            total_skills = sum(
-                len(v) if isinstance(v, list) else 0
-                for v in parsed_data.get("skills", {}).values()
-            )
+            skills_data = parsed_data.get("skills", [])
+            if isinstance(skills_data, list):
+                total_skills = len(skills_data)
+            elif isinstance(skills_data, dict):
+                total_skills = sum(
+                    len(v) if isinstance(v, list) else 0
+                    for v in skills_data.values()
+                )
+            else:
+                total_skills = 0
             
             # Create candidate score
             candidate = CandidateScore(

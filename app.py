@@ -130,7 +130,7 @@ with st.sidebar:
     
     st.divider()
     st.header("⚙️ Configuration")
-    show_debug = st.checkbox("Show Debug Information", value=False)
+    show_raw_response = st.checkbox("Show Raw LLM Response", value=False)
 
 # ========== SINGLE RESUME MODE ==========
 if mode == "Single Resume":
@@ -187,7 +187,7 @@ if mode == "Single Resume":
                 st.error("❌ Please provide resume input.")
                 st.stop()
             
-            if show_debug:
+            if show_raw_response:
                 with st.expander("📋 Raw Resume Text"):
                     st.text(resume_text[:500] + "..." if len(resume_text) > 500 else resume_text)
             
@@ -317,6 +317,40 @@ if mode == "Single Resume":
                     mime="application/json",
                     use_container_width=True
                 )
+                
+            # If Show Raw LLM Response is checked, show debug metrics & raw JSON
+            if show_raw_response:
+                st.divider()
+                st.subheader("🤖 Raw LLM Response & Diagnostics")
+                
+                # Token count
+                token_usage = st.session_state.get("token_usage")
+                if token_usage:
+                    st.markdown("**Extracted Token Counts:**")
+                    col_t1, col_t2, col_t3 = st.columns(3)
+                    with col_t1:
+                        st.metric("Prompt Tokens", token_usage.get("prompt_tokens", 0))
+                    with col_t2:
+                        st.metric("Completion Tokens", token_usage.get("completion_tokens", 0))
+                    with col_t3:
+                        st.metric("Total Tokens", token_usage.get("total_tokens", 0))
+                else:
+                    st.info("No token count metrics available for this run.")
+                    
+                # Parsing errors
+                parsing_error = st.session_state.get("parsing_error")
+                if parsing_error:
+                    st.error(f"⚠️ Parsing Error: {parsing_error}")
+                else:
+                    st.success("🟢 No parsing errors encountered.")
+                    
+                # Raw response
+                raw_output = st.session_state.get("raw_llm_response")
+                if raw_output:
+                    st.markdown("**Raw JSON Response:**")
+                    st.code(raw_output, language="json")
+                else:
+                    st.info("No raw response data found.")
         except Exception as e:
             logger.error(f"Critical single resume processing exception: {e}", exc_info=True)
             st.error("❌ A Critical Processing Error Occurred")

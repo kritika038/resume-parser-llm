@@ -443,19 +443,57 @@ def render_experience_timeline(experience_list: List[Dict[str, Any]]):
     st.markdown(timeline_html, unsafe_allow_html=True)
 
 
-def calculate_experience_tenure(experience_list: List[Dict[str, Any]]) -> str:
+def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
     """
-    Attempts to estimate total tenure or duration based on candidate history.
+    Attempts to calculate total tenure or duration based on candidate history.
     """
+    if not parsed_data_or_list:
+        return "Not Available"
+        
+    experience_list = []
+    
+    # Check if a dictionary or list is passed
+    if isinstance(parsed_data_or_list, dict):
+        # First, check if there is an explicit experience_years field
+        exp_years = parsed_data_or_list.get("experience_years")
+        if exp_years is not None and exp_years != "N/A":
+            try:
+                val = float(exp_years)
+                if val > 0:
+                    years_int = int(val)
+                    months_int = int((val - years_int) * 12)
+                    if years_int > 0:
+                        return f"{years_int}+ Years" if months_int < 3 else f"{years_int}.{int(months_int/1.2)} Years"
+                    else:
+                        return f"{int(months_int)} Months"
+            except (ValueError, TypeError):
+                if isinstance(exp_years, str) and exp_years.strip() and exp_years.strip().lower() not in ["null", "none", "n/a"]:
+                    return exp_years.strip()
+                    
+        # Check employment and internships list fields
+        if isinstance(parsed_data_or_list.get("employment"), list):
+            experience_list.extend(parsed_data_or_list["employment"])
+        if isinstance(parsed_data_or_list.get("internships"), list):
+            experience_list.extend(parsed_data_or_list["internships"])
+        # Support old key
+        if not experience_list and isinstance(parsed_data_or_list.get("experience"), list):
+            experience_list.extend(parsed_data_or_list["experience"])
+    elif isinstance(parsed_data_or_list, list):
+        experience_list = parsed_data_or_list
+    else:
+        return "Not Available"
+        
     if not experience_list:
-        return "N/A"
+        return "Not Available"
         
     import re
     total_years = 0.0
     
     for exp in experience_list:
+        if not isinstance(exp, dict):
+            continue
         duration = exp.get("duration", "")
-        if not duration:
+        if not duration or duration == "N/A":
             continue
             
         # Parse common formats: "X years", "Y months", "X yrs", "2019 - 2022"
@@ -496,14 +534,7 @@ def calculate_experience_tenure(experience_list: List[Dict[str, Any]]) -> str:
         else:
             return f"{months_int} Months"
             
-    # If standard calculations fail, count roles as tenure indicator
-    num_roles = len(experience_list)
-    if num_roles >= 4:
-        return "Senior (4+ Roles)"
-    elif num_roles >= 2:
-        return "Mid-Level (2+ Roles)"
-    else:
-        return "Entry Level"
+    return "Not Available"
 
 
 def render_recruiter_dashboard(
@@ -595,10 +626,16 @@ def render_recruiter_dashboard(
         skills_sub = f"🛠️ {len(semantic_gaps['matched_skills'])} matched requirements"
     else:
         # Sum total parsed skills
-        total_skills = sum(
-            len(v) if isinstance(v, list) else 0 
-            for v in parsed_data.get("skills", {}).values()
-        )
+        skills_data = parsed_data.get("skills", [])
+        if isinstance(skills_data, list):
+            total_skills = len(skills_data)
+        elif isinstance(skills_data, dict):
+            total_skills = sum(
+                len(v) if isinstance(v, list) else 0 
+                for v in skills_data.values()
+            )
+        else:
+            total_skills = 0
         skills_value = str(total_skills)
         skills_sub = "🛠️ Extracted skills"
         
@@ -612,9 +649,20 @@ def render_recruiter_dashboard(
         )
         
     # Experience Level Card
+    tenure = calculate_experience_tenure(parsed_data)
+    
+    employment_list = parsed_data.get("employment", [])
+    internship_list = parsed_data.get("internships", [])
     experience_list = parsed_data.get("experience", [])
-    tenure = calculate_experience_tenure(experience_list)
-    latest_role = experience_list[0].get("role", "Professional") if experience_list else "Professional"
+    
+    latest_role = "Professional"
+    if employment_list and isinstance(employment_list, list) and len(employment_list) > 0:
+        latest_role = employment_list[0].get("role", "Professional")
+    elif internship_list and isinstance(internship_list, list) and len(internship_list) > 0:
+        latest_role = internship_list[0].get("role", "Professional")
+    elif experience_list and isinstance(experience_list, list) and len(experience_list) > 0:
+        latest_role = experience_list[0].get("role", "Professional")
+        
     if len(latest_role) > 20:
         latest_role = latest_role[:17] + "..."
         
@@ -648,7 +696,24 @@ def render_recruiter_dashboard(
         
         # Experience Timeline
         st.subheader("⏳ Chronological Work History")
-        render_experience_timeline(experience_list)
+        
+        has_any_exp = False
+        if employment_list and isinstance(employment_list, list) and len(employment_list) > 0:
+            st.markdown("**Professional Experience**")
+            render_experience_timeline(employment_list)
+            has_any_exp = True
+            
+        if internship_list and isinstance(internship_list, list) and len(internship_list) > 0:
+            st.markdown("**Internships**")
+            render_experience_timeline(internship_list)
+            has_any_exp = True
+            
+        if not has_any_exp and experience_list and isinstance(experience_list, list) and len(experience_list) > 0:
+            render_experience_timeline(experience_list)
+            has_any_exp = True
+            
+        if not has_any_exp:
+            st.markdown("*No experience timeline recorded.*")
         
     with sec_col2:
         st.subheader("🛠️ Technical Alignment Analysis")
@@ -694,14 +759,21 @@ def render_recruiter_dashboard(
             st.info("💡 Provide a job description on the side inputs to unlock deep skill gap analysis, semantic matchmaking, and JD alignment scores!")
             
             # Render regular parsed skills
-            skills_dict = parsed_data.get("skills", {})
-            for cat, s_list in skills_dict.items():
-                if s_list:
-                    render_skills_badges(
-                        title=cat.replace("_", " ").title(),
-                        skills=s_list,
-                        badge_type="normal"
-                    )
+            skills_dict = parsed_data.get("skills", [])
+            if isinstance(skills_dict, list):
+                render_skills_badges(
+                    title="Extracted Skills",
+                    skills=skills_dict,
+                    badge_type="normal"
+                )
+            elif isinstance(skills_dict, dict):
+                for cat, s_list in skills_dict.items():
+                    if s_list:
+                        render_skills_badges(
+                            title=cat.replace("_", " ").title(),
+                            skills=s_list,
+                            badge_type="normal"
+                        )
                     
         # Missing ATS Elements Warning
         from services.ats_scorer import get_missing_ats_elements

@@ -7,7 +7,7 @@ import requests
 import logging
 from typing import Optional, Dict, Any
 
-from utils.validators import clean_json, validate_resume_schema
+from utils.validators import clean_json, validate_resume_schema, clean_and_validate_resume
 from utils.prompts import PARSE_PROMPT, SUGGEST_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -92,12 +92,6 @@ def parse_resume(resume_text: str) -> Optional[Dict[str, Any]]:
     Returns:
         dict: Structured resume data following schema
         None: If parsing fails at any step
-        
-    Examples:
-        >>> resume_text = "John Doe\\nSoftware Engineer..."
-        >>> parsed = parse_resume(resume_text)
-        >>> if parsed:
-        ...     print(parsed["name"])  # "John Doe"
     """
     if not resume_text or not resume_text.strip():
         logger.warning("Empty resume text provided")
@@ -110,8 +104,14 @@ def parse_resume(resume_text: str) -> Optional[Dict[str, Any]]:
     logger.info("Sending resume to LLM for parsing...")
     raw_output = call_llm(full_prompt)
     
+    # Capture raw output & initialize parsing error in session state
+    import streamlit as st
+    st.session_state["raw_llm_response"] = raw_output or "No output received from LLM."
+    st.session_state["parsing_error"] = ""
+    
     if not raw_output:
         logger.error("No output received from LLM")
+        st.session_state["parsing_error"] = "No output received from LLM provider (check connectivity or rate limits)."
         return None
     
     # Clean JSON
@@ -121,14 +121,13 @@ def parse_resume(resume_text: str) -> Optional[Dict[str, Any]]:
     if not parsed:
         logger.error("Failed to parse JSON from LLM output")
         logger.debug(f"Raw output: {raw_output[:300]}...")
+        st.session_state["parsing_error"] = "Failed to parse JSON from LLM output. The raw response was not valid JSON."
         return None
     
-    # Validate schema
-    if not validate_resume_schema(parsed):
-        logger.error("Parsed JSON does not match resume schema")
-        return None
+    # Clean and validate against factual extraction rules
+    parsed = clean_and_validate_resume(parsed, resume_text)
     
-    logger.info("Resume successfully parsed and validated")
+    logger.info("Resume successfully parsed, validated, and filtered for factual alignment")
     return parsed
 
 
@@ -184,51 +183,62 @@ def generate_recruiter_summary(parsed_data: Dict[str, Any]) -> str:
         logger.warning("No candidate data available for summary")
         return "No candidate data available."
     
-    experience_list = parsed_data.get("experience", [])
-    skills = parsed_data.get("skills", {})
+    employment_list = parsed_data.get("employment", [])
+    internship_list = parsed_data.get("internships", [])
+    skills = parsed_data.get("skills", [])
     name = parsed_data.get("name", "The Candidate")
     
     # 1. Structured fallback function to ensure visual resilience
     def get_structured_fallback():
         flat_skills = []
-        if isinstance(skills, dict):
+        if isinstance(skills, list):
+            flat_skills = skills
+        elif isinstance(skills, dict):
             for skill_list in skills.values():
                 if isinstance(skill_list, list):
                     flat_skills.extend(skill_list)
         
         top_skills = ", ".join(flat_skills[:6]) if flat_skills else "software development"
         
-        if experience_list and isinstance(experience_list, list) and len(experience_list) > 0:
-            latest = experience_list[0]
+        if employment_list and isinstance(employment_list, list) and len(employment_list) > 0:
+            latest = employment_list[0]
             role = latest.get("role", "Professional")
             company = latest.get("company", "leading organization")
             duration = latest.get("duration", "")
-            time_phrase = f" ({duration})" if duration else ""
+            time_phrase = f" ({duration})" if (duration and duration != "N/A") else ""
             
-            return f"{name} is an experienced professional who most recently served as a {role} at {company}{time_phrase}. They possess key strengths in {top_skills}, demonstrating robust expertise across these domains."
+            return f"{name} is a professional who most recently served as a {role} at {company}{time_phrase}. They possess key strengths in {top_skills}."
+        elif internship_list and isinstance(internship_list, list) and len(internship_list) > 0:
+            latest = internship_list[0]
+            role = latest.get("role", "Intern")
+            company = latest.get("company", "organization")
+            duration = latest.get("duration", "")
+            time_phrase = f" ({duration})" if (duration and duration != "N/A") else ""
+            
+            return f"{name} has internship experience as a {role} at {company}{time_phrase}, with key strengths in {top_skills}."
         else:
-            return f"{name} is a skilled candidate with experience specializing in {top_skills}. They offer a strong technical foundation and are motivated to contribute value to professional engineering roles."
+            return f"{name} is a candidate with experience specializing in {top_skills}."
 
     # 2. Try LLM summary generation
     import json
     prompt = f"""
-    You are an elite corporate recruiter.
-    Analyze the following candidate's parsed resume data and generate a highly professional, cohesive 2-3 sentence Executive Summary.
-    
-    Focus on:
-    - Candidate's primary expertise area (e.g. cloud infrastructure, full-stack engineering, ML)
-    - Depth of career background and latest role/company
-    - 2-3 prominent technical highlights or core capabilities
+    You are a factual resume summarizer.
+    Analyze the following candidate's parsed resume data and generate a concise, cohesive 2-3 sentence Recruiter Executive Summary.
     
     STRICT RULES:
-    - Keep it strictly under 3 sentences.
-    - Write in third-person, sophisticated recruiter tone.
+    - The summary must be strictly factual and grounded ONLY in the provided resume data.
+    - Never include subjective praise, puffery, or fabricated claims (e.g. do NOT write "highly skilled AI specialist" or "expert" unless explicitly in the text).
+    - If the candidate is a student or has internship-only experience, present them accurately as such (e.g., "Student with internship experience in...").
+    - Only mention specific technologies, projects, and roles explicitly listed in the provided data.
+    - Keep it under 3 sentences.
     - Do NOT include any markdown formatting, bullet points, greetings, introductory filler, or surrounding quotes.
-    - Output only the plain text summary paragraphs.
+    - Output only the plain text summary.
     
     Candidate Name: {name}
     Skills: {json.dumps(skills)}
-    Experience: {json.dumps(experience_list[:3])}
+    Employment: {json.dumps(employment_list[:3])}
+    Internships: {json.dumps(internship_list[:3])}
+    Projects: {json.dumps(parsed_data.get('projects', [])[:3])}
     """
     
     logger.info("Requesting LLM-generated recruiter executive summary...")
