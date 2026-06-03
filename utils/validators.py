@@ -209,6 +209,59 @@ def is_skill_in_resume(skill: str, resume_text: str) -> bool:
     return False
 
 
+def remove_subjective_language(val: Any) -> Any:
+    """
+    Recursively removes subjective/recruiter language from parsed resume fields.
+    """
+    if isinstance(val, str):
+        if val == "Not Found" or val == "N/A":
+            return val
+        phrases = [
+            "highly skilled",
+            "expert",
+            "strong background",
+            "proven track record",
+            "extensive experience",
+            "accomplished",
+            "exceptional",
+            "industry-ready",
+            "advanced expertise",
+            "expertise spans",
+            "brings a unique combination",
+            "ai specialist",
+            "machine learning expert"
+        ]
+        # Sort phrases by length descending to match longer phrases first
+        phrases = sorted(phrases, key=len, reverse=True)
+        cleaned = val
+        for phrase in phrases:
+            # Case-insensitive word boundary replacement
+            pattern = re.compile(r'\b' + re.escape(phrase) + r'\b', re.IGNORECASE)
+            cleaned = pattern.sub("", cleaned)
+            # Catch without word boundaries just in case
+            pattern_no_boundary = re.compile(re.escape(phrase), re.IGNORECASE)
+            cleaned = pattern_no_boundary.sub("", cleaned)
+            
+        # Clean up spacing, trailing/leading punctuation
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        cleaned = re.sub(r'^[\s,.:;\-\|]+|[\s,.:;\-\|]+$', '', cleaned).strip()
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned if cleaned else "Not Found"
+        
+    elif isinstance(val, list):
+        cleaned_list = []
+        for item in val:
+            cleaned_item = remove_subjective_language(item)
+            if cleaned_item and cleaned_item != "Not Found":
+                cleaned_list.append(cleaned_item)
+        return cleaned_list
+        
+    elif isinstance(val, dict):
+        return {k: remove_subjective_language(v) for k, v in val.items()}
+        
+    return val
+
+
 def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[str, Any]:
     """
     Cleans resume data strictly based on factual resume text.
@@ -223,7 +276,11 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
     # Verify basic schema properties
     validate_resume_schema(data)
     
-    resume_lower = resume_text.lower()
+    # Pre-compute normalized resume text for strict contiguous matching
+    def norm(t: str) -> str:
+        return re.sub(r'[^a-zA-Z0-9]', '', t).lower()
+        
+    resume_norm = norm(resume_text)
     
     # Helper to verify any text value exists in the resume text
     def verify_field(val: Any) -> Any:
@@ -234,27 +291,40 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         if not val_str or val_stripped_lower in ["not found", "n/a", "null", "none", ""]:
             return "Not Found"
         
-        # Check substring match
-        if val_stripped_lower in resume_lower:
-            return val_str
+        # First, remove subjective language from the input
+        val_clean = remove_subjective_language(val_str)
+        if val_clean == "Not Found":
+            return "Not Found"
             
-        # Check individual words (minimum 3 characters)
-        words = re.findall(r'[a-zA-Z0-9#\+\-]+', val_stripped_lower)
-        if words:
-            # If at least one significant word is in resume_lower, consider it verified
-            matched_words = [w for w in words if len(w) >= 3 and w in resume_lower]
-            if len(matched_words) > 0:
-                return val_str
-                
+        val_normalized = norm(val_clean)
+        if not val_normalized:
+            return "Not Found"
+            
+        # Check strict substring match in normalized resume
+        if val_normalized in resume_norm:
+            return val_clean
+            
         # Check synonyms registry for skills
         try:
             from services.skill_gap_analyzer import SKILL_SYNONYMS
             for syn, canonical in SKILL_SYNONYMS.items():
-                if canonical.lower() == val_stripped_lower:
-                    if syn.lower() in resume_lower:
-                        return val_str
+                if norm(canonical) == val_normalized or norm(syn) == val_normalized:
+                    if norm(syn) in resume_norm or norm(canonical) in resume_norm:
+                        return val_clean
         except Exception:
             pass
+            
+        # Fallback: Split by common separators/conjunctions to find a factual substring
+        segments = re.split(r'\s+(?:and|with|having|for|at|in|of|on|a|an|the)\b|[,;\|\-\(\)]', val_clean)
+        matching_segments = []
+        for seg in segments:
+            seg_strip = seg.strip()
+            if len(seg_strip) > 2 and norm(seg_strip) in resume_norm:
+                matching_segments.append(seg_strip)
+                
+        if matching_segments:
+            # Return the longest matching segment
+            return max(matching_segments, key=len)
                     
         return "Not Found"
         
@@ -365,6 +435,9 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         if cleaned_rec["name"] != "Not Found":
             cleaned_proj.append(cleaned_rec)
     data["projects"] = cleaned_proj
+    
+    # 7. Recursively remove subjective recruiter language from all fields
+    data = remove_subjective_language(data)
     
     return data
 

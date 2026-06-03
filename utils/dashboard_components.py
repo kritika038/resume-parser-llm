@@ -443,13 +443,16 @@ def render_experience_timeline(experience_list: List[Dict[str, Any]]):
     st.markdown(timeline_html, unsafe_allow_html=True)
 
 
-def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
+def calculate_experience_tenure_with_source(parsed_data_or_list: Any) -> tuple[str, str]:
     """
-    Attempts to calculate total tenure strictly based on candidate professional employment history.
-    Does not include internships in the tenure calculation.
+    Calculates total experience tenure and lists the exact date ranges and calculations used.
+    Does not include internships in the professional experience calculation.
+    
+    Returns:
+        (tenure_str, calculation_source_str)
     """
     if not parsed_data_or_list:
-        return "Not Found"
+        return "Not Found", "No experience data available."
         
     employment_list = []
     internship_list = []
@@ -468,72 +471,150 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
     elif isinstance(parsed_data_or_list, list):
         employment_list = parsed_data_or_list
     else:
-        return "Not Found"
+        return "Not Found", "Invalid data format."
         
-    # Check if ONLY internships exist
     if not employment_list and internship_list:
-        return "Internship Experience"
+        return "Internship Experience", "Only internship experience found (excluded from professional tenure)."
         
     if not employment_list:
-        return "Not Found"
+        return "Not Found", "No professional work experience records found."
         
     import re
-    total_years = 0.0
-    has_valid_duration = False
+    from typing import Optional
+    
+    def parse_date_to_month_year(date_str: str) -> Optional[tuple[int, int]]:
+        date_str = date_str.strip().lower()
+        if not date_str:
+            return None
+            
+        months_map = {
+            'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+            'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+            'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+            'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12
+        }
+        
+        # Search for a 4-digit year
+        year_match = re.search(r'\b(20\d{2}|19\d{2})\b', date_str)
+        if not year_match:
+            return None
+        year = int(year_match.group(1))
+        
+        # Search for month keyword
+        month = 1
+        for m_name, m_val in months_map.items():
+            if m_name in date_str:
+                month = m_val
+                break
+        else:
+            # Check for numeric month MM/YYYY or YYYY-MM
+            # Exclude the 4-digit year from the month search
+            remainder = date_str.replace(str(year), '').strip()
+            num_match = re.search(r'\b(0?[1-9]|1[0-2])\b', remainder)
+            if num_match:
+                month = int(num_match.group(1))
+                
+        return (month, year)
+        
+    total_months = 0
+    calculation_details = []
     
     for emp in employment_list:
         if not isinstance(emp, dict):
             continue
+        role = emp.get("role", "Role")
+        company = emp.get("company", "Company")
         duration = emp.get("duration", "")
-        if not duration or duration == "Not Found" or duration == "N/A" or duration.strip() == "":
+        if not duration or duration == "Not Found" or duration == "N/A" or not duration.strip():
             continue
             
-        # Parse common formats: "X years", "Y months", "X yrs", "2019 - 2022"
-        # Look for explicit year patterns first
-        year_matches = re.findall(r'\b(20\d{2}|19\d{2})\b', duration)
-        if len(year_matches) == 2:
-            try:
-                start = int(year_matches[0])
-                end = int(year_matches[1])
-                diff = abs(end - start)
-                total_years += diff if diff > 0 else 0.5
-                has_valid_duration = True
-                continue
-            except ValueError:
-                pass
+        # Parse duration
+        parts = []
+        for sep in ['-', '–', '—', ' to ']:
+            if sep in duration:
+                p = duration.split(sep)
+                if len(p) == 2:
+                    parts = p
+                    break
+        else:
+            # Fallback: maybe just year matches
+            year_matches = re.findall(r'\b(20\d{2}|19\d{2})\b', duration)
+            if len(year_matches) == 2:
+                parts = [year_matches[0], year_matches[1]]
                 
-        # Look for "X years" or "X yrs"
+        if len(parts) == 2:
+            start_str, end_str = parts[0].strip(), parts[1].strip()
+            start_date = parse_date_to_month_year(start_str)
+            
+            if start_date:
+                # If end is present/current/now, use June 2026 (local time 2026-06-03)
+                if end_str.lower() in ['present', 'current', 'now', 'today']:
+                    end_date = (6, 2026)
+                    end_display = "Present (June 2026)"
+                else:
+                    end_date = parse_date_to_month_year(end_str)
+                    end_display = end_str
+                    
+                if end_date:
+                    start_m, start_y = start_date
+                    end_m, end_y = end_date
+                    
+                    months = (end_y - start_y) * 12 + (end_m - start_m)
+                    # Include boundary month
+                    months = max(0, months + 1)
+                    total_months += months
+                    calculation_details.append(
+                        f"• {role} at {company}: {start_str} to {end_display} ({months} months)"
+                    )
+                    continue
+                    
+        # Fallback to direct year/month search in text
+        # If "X years" or "X yrs"
         years_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:yr|year)', duration, re.IGNORECASE)
         if years_match:
             try:
-                total_years += float(years_match.group(1))
-                has_valid_duration = True
+                yrs = float(years_match.group(1))
+                m = int(yrs * 12)
+                total_months += m
+                calculation_details.append(f"• {role} at {company}: {duration} ({m} months)")
                 continue
             except ValueError:
                 pass
                 
-        # Look for "X months"
+        # If "X months"
         months_match = re.search(r'(\d+)\s*(?:mo|month)', duration, re.IGNORECASE)
         if months_match:
             try:
-                total_years += float(months_match.group(1)) / 12.0
-                has_valid_duration = True
+                m = int(months_match.group(1))
+                total_months += m
+                calculation_details.append(f"• {role} at {company}: {duration} ({m} months)")
+                continue
             except ValueError:
                 pass
                 
-    if not has_valid_duration:
-        # If all employment dates/durations are missing/unparseable, return "Not Found"
-        return "Not Found"
+    if total_months == 0:
+        return "Not Found", "No valid date ranges or durations could be parsed from the professional experience history."
         
-    if total_years > 0:
-        years_int = int(total_years)
-        months_int = int((total_years - years_int) * 12)
-        if years_int > 0:
-            return f"{years_int}+ Years" if months_int < 3 else f"{years_int}.{int(months_int/1.2)} Years"
-        else:
-            return f"{months_int} Months"
-            
-    return "Not Found"
+    years = total_months / 12.0
+    years_int = int(years)
+    months_int = total_months % 12
+    
+    if years_int > 0:
+        tenure_str = f"{years_int}.{months_int} Years" if months_int > 0 else f"{years_int} Years"
+    else:
+        tenure_str = f"{months_int} Months"
+        
+    source_str = "\n".join(calculation_details) + f"\nTotal: {total_months} months = {tenure_str}"
+    return tenure_str, source_str
+
+
+def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
+    """
+    Attempts to calculate total tenure strictly based on candidate professional employment history.
+    Does not include internships in the tenure calculation.
+    """
+    tenure, _ = calculate_experience_tenure_with_source(parsed_data_or_list)
+    return tenure
 
 
 def render_recruiter_dashboard(
@@ -695,6 +776,10 @@ def render_recruiter_dashboard(
         
         # Experience Timeline
         st.subheader("⏳ Chronological Work History")
+        
+        # Display precise calculation source for verification
+        _, calc_source = calculate_experience_tenure_with_source(parsed_data)
+        st.info(f"**Experience Calculation Source:**\n{calc_source}")
         
         has_any_exp = False
         if employment_list and isinstance(employment_list, list) and len(employment_list) > 0:
