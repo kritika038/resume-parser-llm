@@ -38,8 +38,9 @@ Follow these setup guidelines inside the Hugging Face Console:
     ---
     ```
 *   [ ] **Configure Environment Variables (Settings Tab)**:
-    *   Add **Variable**: `LLM_PROVIDER = groq` (forces the platform to run high-speed cloud LPU parsers instead of local server ports).
-    *   Add **Secret**: `GROQ_API_KEY = gsk_...` (protects your personal Groq access token from public exposure).
+    *   *Automatic Defaulting*: If running on Hugging Face Spaces (detected via `SPACE_ID`), the platform automatically defaults `LLM_PROVIDER` to `groq`.
+    *   *(Optional)* Add **Variable**: `LLM_PROVIDER = groq` (explicitly forces the platform to run high-speed cloud Groq LPU parsers).
+    *   Add **Secret**: `GROQ_API_KEY = gsk_...` (protects your personal Groq access token from public exposure; required for Groq Cloud execution).
     *   *(Optional)* Add **Variable**: `GROQ_MODEL = llama3-8b-8192` (targets the high-speed Llama-3 model).
 
 ---
@@ -66,6 +67,10 @@ Push code to Hugging Face Spaces and monitor live container build pipelines:
 Conduct the following sanity checks on the live URL to confirm 100% operational health:
 
 *   [ ] **Startup Validation Banner Check**:
+    *   Verify **System Diagnostics** widget renders in the sidebar displaying:
+        - **Environment**: `Hugging Face Space`
+        - **Active Provider**: `GROQ`
+        - **Groq API Key**: `Configured` (or `Missing` if secret is not set)
     *   Verify that if the space initializes with a missing `GROQ_API_KEY`, a gorgeous error card displays detailing configuration steps and halts execution safely with `st.stop()`.
     *   Verify that once the key is added in Settings, the banner changes to a clean `🟢 Connected to Groq Cloud` indicator.
 *   [ ] **Single Resume Analysis Test**:
