@@ -130,7 +130,7 @@ with st.sidebar:
     
     st.divider()
     st.header("⚙️ Configuration")
-    show_raw_response = st.checkbox("Show Raw LLM Response", value=False)
+    show_raw_response = st.checkbox("Show Debug Panel", value=False)
 
 # ========== SINGLE RESUME MODE ==========
 if mode == "Single Resume":
@@ -318,49 +318,37 @@ if mode == "Single Resume":
                     use_container_width=True
                 )
                 
-            # If Show Raw LLM Response is checked, show debug metrics & raw JSON
+            # If Show Debug Panel is checked, show debug metrics & panels
             if show_raw_response:
                 st.divider()
-                st.subheader("🕵️‍♂️ Debug & Verification Panel")
+                st.subheader("🕵️‍♂️ Debug Panel")
                 
-                # Token count
-                token_usage = st.session_state.get("token_usage")
-                if token_usage:
-                    st.markdown("**LLM Token Usage:**")
-                    col_t1, col_t2, col_t3 = st.columns(3)
-                    with col_t1:
-                        st.metric("Prompt Tokens", token_usage.get("prompt_tokens", 0))
-                    with col_t2:
-                        st.metric("Completion Tokens", token_usage.get("completion_tokens", 0))
-                    with col_t3:
-                        st.metric("Total Tokens", token_usage.get("total_tokens", 0))
-                
-                # 1. Show Raw Resume Text
-                with st.expander("📄 Show Raw Resume Text", expanded=False):
+                # 1. Raw Resume Text
+                with st.expander("📄 Raw Resume Text", expanded=False):
                     if resume_text:
-                        st.text_area("Raw Resume Text", value=resume_text, height=300, disabled=True)
+                        st.text_area("Raw Resume Text Content", value=resume_text, height=300, disabled=True)
                     else:
                         st.info("No raw resume text available.")
                         
-                # 2. Show Raw LLM JSON
-                with st.expander("🤖 Show Raw LLM JSON", expanded=False):
+                # 2. Extracted JSON
+                with st.expander("🤖 Extracted JSON", expanded=False):
                     raw_output = st.session_state.get("raw_llm_response")
                     if raw_output:
                         st.code(raw_output, language="json")
                     else:
-                        st.info("No raw LLM response found.")
+                        st.info("No raw LLM JSON response found.")
                         
-                # 3. Show Extracted Entities
-                with st.expander("🔍 Show Extracted Entities", expanded=False):
+                # 3. Rendered Dashboard Data
+                with st.expander("📊 Rendered Dashboard Data", expanded=False):
                     if parsed_data:
+                        st.markdown("**Cleaned & Validated Candidate JSON:**")
                         st.json(parsed_data)
                     else:
-                        st.info("No verified entities payload available.")
+                        st.markdown("*No verified parsed candidate data.*")
                         
-                # 4. Show ATS Calculation
-                with st.expander("📊 Show ATS Calculation", expanded=False):
                     ats_breakdown = st.session_state.get("ats_breakdown")
                     if ats_breakdown:
+                        st.markdown("**ATS Scoring Breakdown:**")
                         # Render metrics in two rows of 4 columns
                         items = list(ats_breakdown.items())
                         col_row1 = st.columns(4)

@@ -3,52 +3,46 @@ Prompt templates for LLM-based resume parsing.
 Contains all prompt strings used for resume extraction and analysis.
 """
 
-PARSE_PROMPT = """You are a resume information extraction engine.
+PARSE_PROMPT = """You are a strict resume extraction engine.
 
-Your task is to extract ONLY information explicitly present in the resume.
+Your task is ONLY to extract information that explicitly exists in the provided resume text.
 
-STRICT RULES:
-- Never infer missing information.
-- Never estimate years of experience.
-- Never invent skills.
-- Never create job titles.
-- Never create certifications.
-- Never assume technologies.
-- Never summarize beyond the provided text.
-- If information is missing, return null.
-- If experience duration is not explicitly written, return null.
-- Internship experience must remain internships.
-- Projects must remain projects.
-- Do not merge internships, projects, and employment.
-- Output valid JSON only.
-- No markdown.
-- No explanations.
+Rules:
+- Never infer information.
+- Never guess missing values.
+- Never create recruiter-style summaries.
+- Never generate professional opinions.
+- Never estimate experience.
+- Never add technologies not found in resume.
+- Never add certifications not found in resume.
+- Never add projects not found in resume.
+- If a field is not found: return null.
+- Return ONLY valid JSON.
 
-Return schema:
+Required Output Format:
 {
   "name": null,
   "email": null,
   "phone": null,
   "location": null,
-  "linkedin": null,
-  "github": null,
-  "skills": [],
   "education": [],
   "internships": [],
-  "employment": [],
+  "work_experience": [],
   "projects": [],
+  "skills": [],
   "certifications": [],
   "languages": [],
-  "experience_years": null,
-  "summary": null
+  "tools": [],
+  "achievements": [],
+  "experience_months": null
 }
 
 Inner object schemas for array fields:
 - "education": list of objects, each with {"degree": null, "field": null, "institution": null, "year": null}
 - "internships": list of objects, each with {"role": null, "company": null, "duration": null, "responsibilities": []}
-- "employment": list of objects, each with {"role": null, "company": null, "duration": null, "responsibilities": []}
+- "work_experience": list of objects, each with {"role": null, "company": null, "duration": null, "responsibilities": []}
 - "projects": list of objects, each with {"name": null, "tech_stack": [], "summary": null, "impact": null}
-- "skills", "certifications", "languages": flat lists of strings
+- "skills", "certifications", "languages", "tools", "achievements": flat lists of strings
 """
 
 SUGGEST_PROMPT = """

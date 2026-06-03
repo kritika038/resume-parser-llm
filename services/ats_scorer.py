@@ -47,17 +47,17 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
     # (5 points for email, 5 points for phone)
     email = resume_data.get("email")
     phone = resume_data.get("phone")
-    if email and email != "N/A" and email.strip():
+    if email and email != "Not Found" and email != "N/A" and email.strip():
         contact_score += 5
         logger.debug("✓ Email present: +5")
-    if phone and phone != "N/A" and phone.strip():
+    if phone and phone != "Not Found" and phone != "N/A" and phone.strip():
         contact_score += 5
         logger.debug("✓ Phone present: +5")
         
     # 2. Skills Section: 20 points
     skills = resume_data.get("skills", [])
     if isinstance(skills, list):
-        if len(skills) > 0 and not all(s == "N/A" for s in skills):
+        if len(skills) > 0 and not all(s in ["Not Found", "N/A"] for s in skills):
             skills_score = 20
             logger.debug("✓ Skills present: +20")
     elif isinstance(skills, dict):
@@ -72,13 +72,16 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
         edu_score = 15
         logger.debug("✓ Education present: +15")
         
-    # 4. Experience Section: 20 points (Employment + Internships)
+    # 4. Experience Section: 20 points (Employment + Internships + Work Experience)
     employment = resume_data.get("employment", [])
     internships = resume_data.get("internships", [])
     experience = resume_data.get("experience", [])
+    work_experience = resume_data.get("work_experience", [])
     
     has_exp = False
-    if isinstance(employment, list) and len(employment) > 0:
+    if isinstance(work_experience, list) and len(work_experience) > 0:
+        has_exp = True
+    elif isinstance(employment, list) and len(employment) > 0:
         has_exp = True
     elif isinstance(internships, list) and len(internships) > 0:
         has_exp = True
@@ -98,9 +101,9 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
     # 6. Resume Structure / Formatting: 10 points
     # Evaluates presence of core sections (Up to 10 points based on completeness of 6 major categories)
     sections_present = 0
-    if resume_data.get("name") and resume_data.get("name") != "N/A":
+    if resume_data.get("name") and resume_data.get("name") not in ["Not Found", "N/A"]:
         sections_present += 1
-    if (email and email != "N/A") or (phone and phone != "N/A"):
+    if (email and email not in ["Not Found", "N/A"]) or (phone and phone not in ["Not Found", "N/A"]):
         sections_present += 1
     if isinstance(skills, list) and len(skills) > 0:
         sections_present += 1
@@ -108,7 +111,7 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
         sections_present += 1
     if education:
         sections_present += 1
-    if employment or internships or experience:
+    if employment or internships or experience or work_experience:
         sections_present += 1
     if projects:
         sections_present += 1
@@ -130,7 +133,7 @@ def calculate_ats_score(resume_data: Dict[str, Any], keyword_match_score: Option
             for s_list in skills.values():
                 if isinstance(s_list, list):
                     flat_skills.extend(s_list)
-        skills_count = len([s for s in flat_skills if s != "N/A"])
+        skills_count = len([s for s in flat_skills if s not in ["Not Found", "N/A"]])
         keyword_score = min(10, skills_count)
         logger.debug(f"✓ Skills Density Coverage ({skills_count}): +{keyword_score}")
         
@@ -189,7 +192,7 @@ def get_missing_ats_elements(resume_data: Dict[str, Any]) -> list[str]:
     """
     missing = []
     
-    if not resume_data.get("name") or resume_data.get("name") == "N/A":
+    if not resume_data.get("name") or resume_data.get("name") in ["Not Found", "N/A"]:
         missing.append("Name")
     
     email = resume_data.get("email")
@@ -197,14 +200,14 @@ def get_missing_ats_elements(resume_data: Dict[str, Any]) -> list[str]:
     
     # Sub-dict contact check for compatibility
     contact = resume_data.get("contact", {})
-    if not email or email == "N/A":
+    if not email or email in ["Not Found", "N/A"]:
         missing.append("Email address")
-    if not phone or phone == "N/A":
+    if not phone or phone in ["Not Found", "N/A"]:
         missing.append("Phone number")
     
     skills = resume_data.get("skills", [])
     has_skills = False
-    if isinstance(skills, list) and len(skills) > 0:
+    if isinstance(skills, list) and len(skills) > 0 and not all(s in ["Not Found", "N/A"] for s in skills):
         has_skills = True
     elif isinstance(skills, dict) and any(isinstance(v, list) and len(v) > 0 for v in skills.values()):
         has_skills = True
@@ -219,7 +222,8 @@ def get_missing_ats_elements(resume_data: Dict[str, Any]) -> list[str]:
     employment = resume_data.get("employment", [])
     internships = resume_data.get("internships", [])
     experience = resume_data.get("experience", [])
-    if not employment and not internships and not experience:
+    work_experience = resume_data.get("work_experience", [])
+    if not employment and not internships and not experience and not work_experience:
         missing.append("Experience/Employment details")
     
     projects = resume_data.get("projects", [])

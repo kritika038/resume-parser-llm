@@ -146,10 +146,10 @@ class TestResumeIntelligenceServices(unittest.TestCase):
         self.assertNotIn("Kubernetes", cleaned["skills"])
         self.assertEqual(cleaned["skills"].count("Python"), 1)
         
-        # 2. Convert missing/empty values to N/A
-        self.assertEqual(cleaned["phone"], "N/A")
-        self.assertEqual(cleaned["location"], "N/A")
-        self.assertEqual(cleaned["github"], "N/A")
+        # 2. Convert missing/empty values to Not Found
+        self.assertEqual(cleaned["phone"], "Not Found")
+        self.assertEqual(cleaned["location"], "Not Found")
+        self.assertEqual(cleaned["github"], "Not Found")
         
         # 3. Clean empty records
         self.assertEqual(len(cleaned["employment"]), 1)
@@ -161,17 +161,17 @@ class TestResumeIntelligenceServices(unittest.TestCase):
         parsed_data = {
             "name": "Jane",
             "email": "jane@example.com",
-            "phone": "N/A",
+            "phone": "Not Found",
             "skills": ["Python"], # 20 pts
             "education": [{"degree": "BS"}], # 15 pts
             "employment": [{"role": "Developer"}], # 20 pts
             "projects": [], # 0 pts
             "certifications": [],
             "languages": [],
-            "experience_years": "N/A"
+            "experience_years": "Not Found"
         }
         
-        # Contact points: name (not in contact score, but in structure), email is present (+5 pts), phone is N/A (+0 pts) -> 5 pts
+        # Contact points: name (not in contact score, but in structure), email is present (+5 pts), phone is Not Found (+0 pts) -> 5 pts
         # Skills: 20 pts
         # Education: 15 pts
         # Experience: 20 pts

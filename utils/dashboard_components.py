@@ -449,16 +449,18 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
     Does not include internships in the tenure calculation.
     """
     if not parsed_data_or_list:
-        return "Not Available"
+        return "Not Found"
         
     employment_list = []
     internship_list = []
     
     if isinstance(parsed_data_or_list, dict):
         # We strictly compute years from professional employment / experience records, NOT internships
-        if isinstance(parsed_data_or_list.get("employment"), list):
+        if isinstance(parsed_data_or_list.get("work_experience"), list) and parsed_data_or_list["work_experience"]:
+            employment_list = parsed_data_or_list["work_experience"]
+        elif isinstance(parsed_data_or_list.get("employment"), list) and parsed_data_or_list["employment"]:
             employment_list = parsed_data_or_list["employment"]
-        elif isinstance(parsed_data_or_list.get("experience"), list):
+        elif isinstance(parsed_data_or_list.get("experience"), list) and parsed_data_or_list["experience"]:
             employment_list = parsed_data_or_list["experience"]
             
         if isinstance(parsed_data_or_list.get("internships"), list):
@@ -466,14 +468,14 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
     elif isinstance(parsed_data_or_list, list):
         employment_list = parsed_data_or_list
     else:
-        return "Not Available"
+        return "Not Found"
         
     # Check if ONLY internships exist
     if not employment_list and internship_list:
-        return "Internship Experience Only"
+        return "Internship Experience"
         
     if not employment_list:
-        return "Not Available"
+        return "Not Found"
         
     import re
     total_years = 0.0
@@ -483,7 +485,7 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
         if not isinstance(emp, dict):
             continue
         duration = emp.get("duration", "")
-        if not duration or duration == "N/A" or duration.strip() == "":
+        if not duration or duration == "Not Found" or duration == "N/A" or duration.strip() == "":
             continue
             
         # Parse common formats: "X years", "Y months", "X yrs", "2019 - 2022"
@@ -520,8 +522,8 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
                 pass
                 
     if not has_valid_duration:
-        # If all employment dates/durations are missing/unparseable, return "Not Available"
-        return "Not Available"
+        # If all employment dates/durations are missing/unparseable, return "Not Found"
+        return "Not Found"
         
     if total_years > 0:
         years_int = int(total_years)
@@ -531,7 +533,7 @@ def calculate_experience_tenure(parsed_data_or_list: Any) -> str:
         else:
             return f"{months_int} Months"
             
-    return "Not Available"
+    return "Not Found"
 
 
 def render_recruiter_dashboard(
@@ -684,8 +686,8 @@ def render_recruiter_dashboard(
         st.markdown(
             f"""
             <div class="exec-summary-box">
-                <div class="exec-summary-title">Recruiter Executive Summary</div>
-                <div class="exec-summary-text">"{exec_summary}"</div>
+                <div class="exec-summary-title">Candidate Snapshot</div>
+                <div class="exec-summary-text" style="font-style: normal;">{exec_summary}</div>
             </div>
             """,
             unsafe_allow_html=True

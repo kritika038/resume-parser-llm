@@ -75,23 +75,26 @@ def validate_resume_schema(data: Dict[str, Any]) -> bool:
         return False
         
     defaults = {
-        "name": "N/A",
-        "email": "N/A",
-        "phone": "N/A",
-        "location": "N/A",
-        "linkedin": "N/A",
-        "github": "N/A",
-        "contact": {},
-        "skills": [],
+        "name": "Not Found",
+        "email": "Not Found",
+        "phone": "Not Found",
+        "location": "Not Found",
+        "linkedin": "Not Found",
+        "github": "Not Found",
+        "summary": "Not Found",
+        "experience_years": "Not Found",
         "education": [],
         "internships": [],
+        "work_experience": [],
         "employment": [],
         "experience": [],
         "projects": [],
+        "skills": [],
         "certifications": [],
         "languages": [],
-        "experience_years": "N/A",
-        "summary": "N/A",
+        "tools": [],
+        "achievements": [],
+        "experience_months": 0,
         "strengths": []
     }
     
@@ -102,14 +105,14 @@ def validate_resume_schema(data: Dict[str, Any]) -> bool:
     # Enforce type correctness for root keys
     for str_key in ["name", "email", "phone", "location", "linkedin", "github", "summary", "experience_years"]:
         if data[str_key] is None or not isinstance(data[str_key], (str, int, float)):
-            data[str_key] = "N/A"
+            data[str_key] = "Not Found"
         else:
             data[str_key] = str(data[str_key]).strip()
-            if data[str_key].lower() in ["null", "none", ""]:
-                data[str_key] = "N/A"
+            if data[str_key].lower() in ["null", "none", "not found", "n/a", ""]:
+                data[str_key] = "Not Found"
                 
     # Sub-heal nested contact keys for backward compatibility
-    contact = data["contact"]
+    contact = data.get("contact")
     if not isinstance(contact, dict):
         data["contact"] = {}
         contact = data["contact"]
@@ -120,13 +123,27 @@ def validate_resume_schema(data: Dict[str, Any]) -> bool:
             
     # Sync contact keys between root and sub-dict
     for contact_key in ["email", "phone", "linkedin", "github"]:
-        if (not contact[contact_key] or contact[contact_key].lower() == "n/a") and data.get(contact_key) and data.get(contact_key) != "N/A":
-            contact[contact_key] = str(data[contact_key])
-        if (data.get(contact_key) == "N/A" or not data.get(contact_key)) and contact[contact_key]:
+        root_val = data.get(contact_key)
+        if root_val and root_val not in ["Not Found", "N/A"] and (not contact[contact_key] or contact[contact_key].lower() == "n/a"):
+            contact[contact_key] = str(root_val)
+        if contact[contact_key] and contact[contact_key].strip() and (not root_val or root_val == "Not Found"):
             data[contact_key] = contact[contact_key]
             
+    # Sync experience (old), employment (old), and work_experience (new)
+    work_exp = data.get("work_experience", [])
+    if not isinstance(work_exp, list):
+        work_exp = []
+    if not work_exp:
+        work_exp = data.get("employment", []) or data.get("experience", [])
+        if not isinstance(work_exp, list):
+            work_exp = []
+            
+    data["work_experience"] = work_exp
+    data["employment"] = work_exp
+    data["experience"] = work_exp
+    
     # Handle skills compatibility (list vs dict)
-    skills = data["skills"]
+    skills = data.get("skills")
     if isinstance(skills, dict):
         for skill_cat, skill_list in list(skills.items()):
             if not isinstance(skill_list, list):
@@ -139,17 +156,22 @@ def validate_resume_schema(data: Dict[str, Any]) -> bool:
         data["skills"] = []
         
     # Ensure nested objects are lists
-    for list_key in ["education", "internships", "employment", "experience", "projects", "certifications", "languages", "strengths"]:
-        if not isinstance(data[list_key], list):
+    list_keys = ["education", "internships", "work_experience", "employment", "experience", "projects", "certifications", "languages", "tools", "achievements", "strengths"]
+    if not isinstance(data.get("skills"), dict):
+        list_keys.append("skills")
+        
+    for list_key in list_keys:
+        if not isinstance(data.get(list_key), list):
             data[list_key] = []
             
-    # Sync experience (old) and employment (new)
-    experience = data["experience"]
-    employment = data["employment"]
-    if isinstance(experience, list) and len(experience) > 0 and (not isinstance(employment, list) or len(employment) == 0):
-        data["employment"] = experience
-    elif isinstance(employment, list) and len(employment) > 0 and (not isinstance(experience, list) or len(experience) == 0):
-        data["experience"] = employment
+    # Ensure experience_months is an integer
+    try:
+        if data.get("experience_months") is None:
+            data["experience_months"] = 0
+        else:
+            data["experience_months"] = int(data.get("experience_months", 0))
+    except (ValueError, TypeError):
+        data["experience_months"] = 0
         
     return True
 
@@ -193,7 +215,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
     - Removes duplicated skills.
     - Removes inferred/hallucinated technologies not found in raw text.
     - Removes empty records.
-    - Converts missing values to N/A.
+    - Converts missing values to Not Found.
     """
     if not isinstance(data, dict):
         return {}
@@ -206,11 +228,11 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
     # Helper to verify any text value exists in the resume text
     def verify_field(val: Any) -> Any:
         if val is None:
-            return "N/A"
+            return "Not Found"
         val_str = str(val).strip()
         val_stripped_lower = val_str.lower()
-        if not val_str or val_stripped_lower in ["n/a", "null", "none", ""]:
-            return "N/A"
+        if not val_str or val_stripped_lower in ["not found", "n/a", "null", "none", ""]:
+            return "Not Found"
         
         # Check substring match
         if val_stripped_lower in resume_lower:
@@ -234,7 +256,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         except Exception:
             pass
                     
-        return "N/A"
+        return "Not Found"
         
     # 1. Verify and clean root fields
     for field in ["name", "email", "phone", "location", "linkedin", "github", "summary", "experience_years"]:
@@ -242,15 +264,15 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         verified = verify_field(val)
         data[field] = verified
         
-    # 2. Verify and deduplicate skills, certifications, languages
-    for list_key in ["skills", "certifications", "languages"]:
+    # 2. Verify and deduplicate skills, certifications, languages, tools, achievements
+    for list_key in ["skills", "certifications", "languages", "tools", "achievements"]:
         lst = data.get(list_key, [])
         cleaned_list = []
         seen = set()
         for x in lst:
             if x:
                 verified_val = verify_field(x)
-                if verified_val != "N/A":
+                if verified_val != "Not Found":
                     val_lower = verified_val.lower()
                     if val_lower not in seen:
                         seen.add(val_lower)
@@ -268,8 +290,8 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
             "institution": verify_field(edu.get("institution")),
             "year": verify_field(edu.get("year"))
         }
-        # A record is valid if at least degree or institution is present
-        if cleaned_rec["degree"] != "N/A" or cleaned_rec["institution"] != "N/A":
+        # A record is valid if degree or institution is present
+        if cleaned_rec["degree"] != "Not Found" or cleaned_rec["institution"] != "Not Found":
             cleaned_edu.append(cleaned_rec)
     data["education"] = cleaned_edu
     
@@ -283,7 +305,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         if isinstance(resps, list):
             for r in resps:
                 v_r = verify_field(r)
-                if v_r != "N/A":
+                if v_r != "Not Found":
                     verified_resps.append(v_r)
                     
         cleaned_rec = {
@@ -292,13 +314,13 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
             "duration": verify_field(item.get("duration")),
             "responsibilities": verified_resps
         }
-        if cleaned_rec["role"] != "N/A" or cleaned_rec["company"] != "N/A":
+        if cleaned_rec["role"] != "Not Found" or cleaned_rec["company"] != "Not Found":
             cleaned_int.append(cleaned_rec)
     data["internships"] = cleaned_int
     
-    # 5. Clean employment records
+    # 5. Clean work_experience records
     cleaned_emp = []
-    for item in data.get("employment", []):
+    for item in data.get("work_experience", []):
         if not isinstance(item, dict):
             continue
         resps = item.get("responsibilities", [])
@@ -306,7 +328,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         if isinstance(resps, list):
             for r in resps:
                 v_r = verify_field(r)
-                if v_r != "N/A":
+                if v_r != "Not Found":
                     verified_resps.append(v_r)
                     
         cleaned_rec = {
@@ -315,8 +337,9 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
             "duration": verify_field(item.get("duration")),
             "responsibilities": verified_resps
         }
-        if cleaned_rec["role"] != "N/A" or cleaned_rec["company"] != "N/A":
+        if cleaned_rec["role"] != "Not Found" or cleaned_rec["company"] != "Not Found":
             cleaned_emp.append(cleaned_rec)
+    data["work_experience"] = cleaned_emp
     data["employment"] = cleaned_emp
     data["experience"] = cleaned_emp
     
@@ -330,7 +353,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
         if isinstance(tech, list):
             for t in tech:
                 v_t = verify_field(t)
-                if v_t != "N/A":
+                if v_t != "Not Found":
                     verified_tech.append(v_t)
                     
         cleaned_rec = {
@@ -339,7 +362,7 @@ def clean_and_validate_resume(data: Dict[str, Any], resume_text: str) -> Dict[st
             "summary": verify_field(item.get("summary")),
             "impact": verify_field(item.get("impact"))
         }
-        if cleaned_rec["name"] != "N/A":
+        if cleaned_rec["name"] != "Not Found":
             cleaned_proj.append(cleaned_rec)
     data["projects"] = cleaned_proj
     
@@ -357,10 +380,10 @@ def clean_empty_records(records: list, required_keys: list) -> list:
         for k in required_keys:
             val = r.get(k)
             if isinstance(val, list):
-                if len(val) > 0 and not all(str(x).strip().lower() in ["null", "none", "n/a", ""] for x in val):
+                if len(val) > 0 and not all(str(x).strip().lower() in ["null", "none", "not found", "n/a", ""] for x in val):
                     has_val = True
                     break
-            elif val and str(val).strip() and str(val).strip().lower() not in ["null", "none", "n/a"]:
+            elif val and str(val).strip() and str(val).strip().lower() not in ["null", "none", "not found", "n/a"]:
                 has_val = True
                 break
         if has_val:
@@ -370,11 +393,11 @@ def clean_empty_records(records: list, required_keys: list) -> list:
 
 def convert_nulls_to_na(val):
     if val is None:
-        return "N/A"
+        return "Not Found"
     if isinstance(val, str):
         val_stripped = val.strip()
-        if not val_stripped or val_stripped.lower() in ["null", "none", "n/a"]:
-            return "N/A"
+        if not val_stripped or val_stripped.lower() in ["null", "none", "n/a", "not found"]:
+            return "Not Found"
         return val_stripped
     if isinstance(val, (int, float)):
         return val

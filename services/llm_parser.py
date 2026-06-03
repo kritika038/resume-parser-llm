@@ -168,123 +168,98 @@ def generate_suggestions(resume_data: Dict[str, Any], jd_text: Optional[str] = N
 
 def generate_recruiter_summary(parsed_data: Dict[str, Any]) -> str:
     """
-    Programmatically builds a strictly factual executive summary based on verified parsed details,
-    completely bypassing the LLM to prevent subjective recruiter language and hallucinations.
+    Programmatically constructs a Candidate Snapshot from verified extracted JSON fields.
+    This replaces any AI-generated recruiter summary.
     """
     if not parsed_data or not isinstance(parsed_data, dict):
         return "No candidate data available."
-    
-    name = parsed_data.get("name")
-    if not name or name == "N/A":
-        name = "The candidate"
         
-    parts = []
+    html_parts = []
     
-    # 1. Employment and Internship Experience
-    employment = parsed_data.get("employment", [])
+    # Helper for lists
+    def make_html_list(title: str, items: list) -> str:
+        part = f"<div style='margin-bottom: 12px;'><strong>{title}:</strong><ul style='margin: 4px 0 0 20px; padding: 0; list-style-type: disc;'>"
+        if items:
+            for item in items:
+                part += f"<li style='margin-bottom: 2px;'>{item}</li>"
+        else:
+            part += "<li style='margin-bottom: 2px;'>Not Found</li>"
+        part += "</ul></div>"
+        return part
+
+    # 1. Education
+    edu_items = []
+    edu_list = parsed_data.get("education", [])
+    if edu_list and isinstance(edu_list, list):
+        for edu in edu_list:
+            degree = edu.get("degree") or "Not Found"
+            field = edu.get("field") or "Not Found"
+            inst = edu.get("institution") or "Not Found"
+            year = edu.get("year") or "Not Found"
+            
+            deg_field = f"{degree} in {field}" if (degree != "Not Found" and field != "Not Found") else (degree if degree != "Not Found" else field)
+            edu_str = f"{deg_field} at {inst}" if inst != "Not Found" else deg_field
+            if year != "Not Found":
+                edu_str += f" ({year})"
+            if edu_str != "Not Found":
+                edu_items.append(edu_str)
+            
+    html_parts.append(make_html_list("Education", edu_items))
+
+    # 2. Internships
+    int_items = []
     internships = parsed_data.get("internships", [])
-    
-    experience_phrases = []
-    if employment and isinstance(employment, list):
-        for emp in employment[:2]:
-            role = emp.get("role", "N/A")
-            company = emp.get("company", "N/A")
-            duration = emp.get("duration", "N/A")
-            if role != "N/A" and company != "N/A":
-                dur_str = f" for {duration}" if (duration and duration != "N/A") else ""
-                experience_phrases.append(f"worked as a {role} at {company}{dur_str}")
-            elif role != "N/A":
-                experience_phrases.append(f"worked as a {role}")
-            elif company != "N/A":
-                experience_phrases.append(f"worked at {company}")
-
     if internships and isinstance(internships, list):
-        for item in internships[:2]:
-            role = item.get("role", "N/A")
-            company = item.get("company", "N/A")
-            duration = item.get("duration", "N/A")
-            if role != "N/A" and company != "N/A":
-                dur_str = f" for {duration}" if (duration and duration != "N/A") else ""
-                experience_phrases.append(f"completed an internship as a {role} at {company}{dur_str}")
-            elif role != "N/A":
-                experience_phrases.append(f"completed a {role} internship")
-            elif company != "N/A":
-                experience_phrases.append(f"completed an internship at {company}")
+        for item in internships:
+            role = item.get("role") or "Not Found"
+            comp = item.get("company") or "Not Found"
+            dur = item.get("duration") or "Not Found"
+            
+            int_str = f"{role} at {comp}" if (role != "Not Found" and comp != "Not Found") else (role if role != "Not Found" else comp)
+            if dur != "Not Found":
+                int_str += f" ({dur})"
+            if int_str != "Not Found":
+                int_items.append(int_str)
+            
+    html_parts.append(make_html_list("Internships", int_items))
 
-    if experience_phrases:
-        if len(experience_phrases) == 1:
-            parts.append(f"{name} has {experience_phrases[0]}.")
-        else:
-            parts.append(f"{name} has {experience_phrases[0]} and {experience_phrases[1]}.")
+    # 3. Projects
+    proj_items = []
+    projects = parsed_data.get("projects", [])
+    if projects and isinstance(projects, list):
+        for item in projects:
+            name = item.get("name") or "Not Found"
+            tech = item.get("tech_stack", [])
             
-    # 2. Education
-    education = parsed_data.get("education", [])
-    edu_phrases = []
-    if education and isinstance(education, list):
-        for edu in education[:2]:
-            degree = edu.get("degree", "N/A")
-            field = edu.get("field", "N/A")
-            institution = edu.get("institution", "N/A")
+            proj_str = name
+            if isinstance(tech, list) and tech:
+                proj_str += f" (Tech: {', '.join(tech)})"
+            if proj_str != "Not Found":
+                proj_items.append(proj_str)
             
-            deg_field = ""
-            if degree != "N/A" and field != "N/A":
-                deg_field = f"{degree} in {field}"
-            elif degree != "N/A":
-                deg_field = degree
-            elif field != "N/A":
-                deg_field = f"degree in {field}"
-                
-            if deg_field and institution != "N/A":
-                edu_phrases.append(f"a {deg_field} from {institution}")
-            elif deg_field:
-                edu_phrases.append(f"a {deg_field}")
-            elif institution != "N/A":
-                edu_phrases.append(f"studies at {institution}")
-                
-    if edu_phrases:
-        if len(edu_phrases) == 1:
-            parts.append(f"Their education includes {edu_phrases[0]}.")
-        else:
-            parts.append(f"Their education includes {edu_phrases[0]} and {edu_phrases[1]}.")
-            
-    # 3. Skills
+    html_parts.append(make_html_list("Projects", proj_items))
+
+    # 4. Skills
     skills = parsed_data.get("skills", [])
     flat_skills = []
     if isinstance(skills, list):
-        flat_skills = [s for s in skills if s and s != "N/A"]
+        flat_skills = [s for s in skills if s and s != "Not Found"]
     elif isinstance(skills, dict):
         for val in skills.values():
             if isinstance(val, list):
-                flat_skills.extend([s for s in val if s and s != "N/A"])
+                flat_skills.extend([s for s in val if s and s != "Not Found"])
                 
+    skills_items = []
     if flat_skills:
-        # deduplicate while keeping order
         seen = set()
-        deduped_skills = []
+        deduped = []
         for s in flat_skills:
-            s_lower = s.lower()
-            if s_lower not in seen:
-                seen.add(s_lower)
-                deduped_skills.append(s)
-        skills_str = ", ".join(deduped_skills[:8])
-        parts.append(f"Listed skills include: {skills_str}.")
+            if s.lower() not in seen:
+                seen.add(s.lower())
+                deduped.append(s)
+        skills_items.append(", ".join(deduped))
         
-    # 4. Projects
-    projects = parsed_data.get("projects", [])
-    proj_names = []
-    if projects and isinstance(projects, list):
-        for proj in projects[:2]:
-            p_name = proj.get("name", "N/A")
-            if p_name != "N/A":
-                proj_names.append(p_name)
-    if proj_names:
-        if len(proj_names) == 1:
-            parts.append(f"Completed projects include {proj_names[0]}.")
-        else:
-            parts.append(f"Completed projects include {', and '.join(proj_names)}.")
-        
-    if not parts:
-        return f"Resume data parsed for {name} with no specific employment, education, or skills listed."
-        
-    return " ".join(parts)
+    html_parts.append(make_html_list("Skills", skills_items))
+    
+    return "".join(html_parts)
 
