@@ -14,6 +14,26 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+
+def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
+    """
+    Retrieves configuration keys prioritizing environment variables,
+    with an automatic fallback to Streamlit secrets for Cloud platform compatibility.
+    """
+    # 1. Try environment variables
+    val = os.environ.get(key)
+    if val:
+        return val
+    # 2. Try Streamlit Secrets
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass
+    return default
+
+
 class LLMProvider:
     """Base class defining the unified interface for LLM operations."""
     def generate(self, prompt: str) -> Optional[str]:
@@ -33,11 +53,11 @@ class LLMProvider:
 class OllamaProvider(LLMProvider):
     """Local offline/remote provider utilizing Ollama server endpoints."""
     def __init__(self):
-        ollama_base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+        ollama_base = get_config_value("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
         # Preserve backward compatibility with OLLAMA_API_URL if set
-        self.api_url = os.environ.get("OLLAMA_API_URL", f"{ollama_base}/api/generate")
-        self.model = os.environ.get("OLLAMA_MODEL", "mistral")
-        self.timeout = int(os.environ.get("OLLAMA_TIMEOUT", "90"))
+        self.api_url = get_config_value("OLLAMA_API_URL", f"{ollama_base}/api/generate")
+        self.model = get_config_value("OLLAMA_MODEL", "mistral")
+        self.timeout = int(get_config_value("OLLAMA_TIMEOUT", "90"))
         logger.info(f"OllamaProvider initialized with model={self.model} at url={self.api_url}")
 
     def generate(self, prompt: str) -> Optional[str]:
@@ -129,8 +149,8 @@ class OllamaProvider(LLMProvider):
 class GroqProvider(LLMProvider):
     """Cloud provider utilizing the official Groq API endpoint for high-speed inference."""
     def __init__(self):
-        self.api_key = os.environ.get("GROQ_API_KEY")
-        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.api_key = get_config_value("GROQ_API_KEY")
+        self.model = get_config_value("GROQ_MODEL", "llama-3.1-8b-instant")
         logger.info(f"GroqProvider initialized with model={self.model}")
 
     def generate(self, prompt: str) -> Optional[str]:
@@ -197,10 +217,10 @@ def get_llm_provider() -> LLMProvider:
     Returns:
         LLMProvider: Active LLM provider instance (Ollama or Groq)
     """
-    is_hf_space = "SPACE_ID" in os.environ
-    is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ
+    is_hf_space = "SPACE_ID" in os.environ or get_config_value("SPACE_ID") is not None
+    is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ or get_config_value("RENDER") is not None or get_config_value("PORT") is not None
     default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
-    provider_name = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
+    provider_name = get_config_value("LLM_PROVIDER", default_provider).strip().lower()
     
     if provider_name == "groq":
         return GroqProvider()

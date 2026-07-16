@@ -125,6 +125,39 @@ graph TD
 
 ---
 
+## 📸 Screenshots & Platform Walkthrough
+
+To review the interactive enterprise interface, explore the visual states below:
+
+<details>
+  <summary>💻 Click to Expand Streamlit Recruiter Interface Gallery</summary>
+  <br/>
+
+  #### 1. Home Page & Mode Selection
+  ![Home Page](screenshots/home.png)
+
+  #### 2. Candidate CV PDF Upload State
+  ![Resume Upload](screenshots/upload.png)
+
+  #### 3. Recruiter Insight Dashboard
+  ![Analysis Dashboard](screenshots/dashboard.png)
+
+  #### 4. Formatting ATS Compliance Matrix
+  ![ATS Score Breakdown](screenshots/ats_score.png)
+
+  #### 5. Semantic Job Description Match Rating
+  ![JD Match Analysis](screenshots/jd_match.png)
+
+  #### 6. Dynamic Skill Gap normalizations
+  ![Skill Gap Details](screenshots/skill_gap.png)
+
+  #### 7. Standardized Data Exports (JSON / CSV)
+  ![Data Export](screenshots/export.png)
+
+</details>
+
+---
+
 ## 🛠️ The Pipelines Explained
 
 ### 1. ATS Scoring Pipeline (Deterministic Review)

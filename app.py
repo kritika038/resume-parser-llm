@@ -21,6 +21,7 @@ from services.jd_matcher import (
 )
 from services.candidate_comparator import CandidateComparator, extract_pdf_from_bytes
 from utils.dashboard_components import render_recruiter_dashboard, render_bulk_leaderboard
+from services.llm_providers import get_config_value
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,42 +39,43 @@ import os
 import requests
 
 # ========== PROVIDER VALIDATION & HEALTH CHECKS ==========
-is_hf_space = "SPACE_ID" in os.environ
-default_provider = "groq" if is_hf_space else "ollama"
-provider = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
+is_hf_space = "SPACE_ID" in os.environ or get_config_value("SPACE_ID") is not None
+is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ or get_config_value("RENDER") is not None or get_config_value("PORT") is not None
+default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
+provider = get_config_value("LLM_PROVIDER", default_provider).strip().lower()
 
 # Render System Diagnostics in the sidebar at the top of configuration
 st.sidebar.markdown("### 🔌 System Diagnostics")
-st.sidebar.write(f"**Environment**: `{'Hugging Face Space' if is_hf_space else 'Local Machine'}`")
+st.sidebar.write(f"**Environment**: `{'Hugging Face Space' if is_hf_space else ('Production Cloud' if is_prod else 'Local Machine')}`")
 st.sidebar.write(f"**Active Provider**: `{provider.upper()}`")
-st.sidebar.write(f"**Groq API Key**: `{'Configured' if os.environ.get('GROQ_API_KEY') else 'Missing'}`")
+st.sidebar.write(f"**Groq API Key**: `{'Configured' if get_config_value('GROQ_API_KEY') else 'Missing'}`")
 st.sidebar.divider()
 
 if provider == "groq":
-    groq_key = os.environ.get("GROQ_API_KEY")
+    groq_key = get_config_value("GROQ_API_KEY")
     if not groq_key:
         st.sidebar.error("⚠️ Groq API Key Missing!")
         st.error("### 🔑 Groq API Key Required")
         st.warning(
             "This application is configured to run cloud-hosted LLM analysis via **Groq**, but no "
             "valid `GROQ_API_KEY` was found in the environment variables or secrets.\n\n"
-            "**How to configure on Hugging Face Spaces:**\n"
-            "1. Open your Space **Settings**.\n"
-            "2. Scroll down to the **Variables and secrets** section.\n"
-            "3. Click **New secret** to add your authorization credentials:\n"
+            "**How to configure on Streamlit Community Cloud / Hugging Face Spaces:**\n"
+            "1. Open your Space/App Settings.\n"
+            "2. Navigate to the **Secrets** or **Environment variables** tab.\n"
+            "3. Add your authorization credentials:\n"
             "   * **Name**: `GROQ_API_KEY`\n"
             "   * **Value**: Your Groq API token (`gsk_...` from [console.groq.com](https://console.groq.com))\n"
-            "4. Click **Save** and restart the Space."
+            "4. Save and restart."
         )
         st.info("💡 **Local development fallback:** Set the environment variable `LLM_PROVIDER=ollama` to run the app completely offline using local Ollama model instances.")
         st.stop()
     else:
         st.sidebar.success("🟢 Connected to Groq Cloud")
-        st.sidebar.caption(f"Active Model: `{os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')}`")
+        st.sidebar.caption(f"Active Model: `{get_config_value('GROQ_MODEL', 'llama-3.1-8b-instant')}`")
 elif provider == "ollama":
-    ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+    ollama_base_url = get_config_value("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
     # Preserve backward compatibility with OLLAMA_API_URL
-    ollama_url = os.environ.get("OLLAMA_API_URL", f"{ollama_base_url}/api/generate")
+    ollama_url = get_config_value("OLLAMA_API_URL", f"{ollama_base_url}/api/generate")
     health_check_url = ollama_url.replace("/api/generate", "/api/tags")
     
     # We perform a health check connection with short timeout to not block UI startup time
@@ -83,7 +85,7 @@ elif provider == "ollama":
             is_local = "localhost" in health_check_url or "127.0.0.1" in health_check_url
             connection_label = "Local Ollama" if is_local else "Remote Ollama"
             st.sidebar.success(f"🟢 Connected to {connection_label}")
-            st.sidebar.caption(f"Active Model: `{os.environ.get('OLLAMA_MODEL', 'mistral')}`")
+            st.sidebar.caption(f"Active Model: `{get_config_value('OLLAMA_MODEL', 'mistral')}`")
         else:
             st.sidebar.warning("⚠️ Ollama Connected (Status Warning)")
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):

@@ -14,7 +14,7 @@ from utils.prompts import PARSE_PROMPT, SUGGEST_PROMPT
 
 logger = logging.getLogger(__name__)
 
-from services.llm_providers import get_llm_provider, OllamaProvider, GroqProvider
+from services.llm_providers import get_llm_provider, OllamaProvider, GroqProvider, get_config_value
 import os
 
 
@@ -32,10 +32,10 @@ def call_llm(prompt: str) -> Optional[str]:
         str: Raw LLM completion text
         None: If both primary and fallback providers fail
     """
-    is_hf_space = "SPACE_ID" in os.environ
-    is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ
+    is_hf_space = "SPACE_ID" in os.environ or get_config_value("SPACE_ID") is not None
+    is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ or get_config_value("RENDER") is not None or get_config_value("PORT") is not None
     default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
-    primary_provider_name = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
+    primary_provider_name = get_config_value("LLM_PROVIDER", default_provider).strip().lower()
     
     # 1. Attempt Primary provider execution
     try:
@@ -58,7 +58,7 @@ def call_llm(prompt: str) -> Optional[str]:
         fallback_name = "OLLAMA (LOCAL)"
     else:
         # Fall back to Groq only if API key is provided
-        if os.environ.get("GROQ_API_KEY"):
+        if get_config_value("GROQ_API_KEY"):
             logger.warning("Local Ollama endpoint unreachable. Initiating AUTOMATIC CLOUD GROQ FAILOVER...")
             fallback_provider = GroqProvider()
             fallback_name = "GROQ (CLOUD)"
