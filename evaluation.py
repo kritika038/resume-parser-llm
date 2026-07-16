@@ -35,7 +35,9 @@ except ImportError as e:
 # Constants
 DATASET_PATH = "evaluation_dataset.json"
 REPORT_PATH = "metrics_report.md"
-OLLAMA_HEALTH_URL = "http://localhost:11434/api/tags"
+ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+ollama_url = os.environ.get("OLLAMA_API_URL", f"{ollama_base_url}/api/generate")
+OLLAMA_HEALTH_URL = ollama_url.replace("/api/generate", "/api/tags")
 
 def check_ollama_health() -> bool:
     """Checks if the local Ollama server is running and has the Mistral model installed."""

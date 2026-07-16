@@ -1,11 +1,16 @@
 """
-Validation and cleaning utilities for resume data and JSON output.
-Handles JSON validation, sanitization, and error recovery.
+Validation, Sanitization, and Factual Alignment Utilities.
+Handles LLM JSON response cleanup, regular expression fixes, and schema validation.
+Performs fact checks to prevent LLM hallucinations.
+Keywords: JSON Validation, Schema Verification, Sanitization, Hallucination Control, Production AI.
 """
 
 import json
 import re
+import logging
 from typing import Optional, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 
 def clean_json(raw_output: str) -> Optional[Dict[str, Any]]:
@@ -55,11 +60,11 @@ def clean_json(raw_output: str) -> Optional[Dict[str, Any]]:
         return json.loads(json_str)
 
     except json.JSONDecodeError as e:
-        print(f"JSON Parse Error: {e}")
-        print(f"Attempted to parse: {raw_output[:200]}...")
+        logger.error(f"JSON Parse Error: {e}")
+        logger.debug(f"Attempted to parse: {raw_output[:200]}...")
         return None
     except Exception as e:
-        print(f"Unexpected error in clean_json: {e}")
+        logger.error(f"Unexpected error in clean_json: {e}")
         return None
 
 

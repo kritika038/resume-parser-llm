@@ -71,24 +71,35 @@ if provider == "groq":
         st.sidebar.success("🟢 Connected to Groq Cloud")
         st.sidebar.caption(f"Active Model: `{os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')}`")
 elif provider == "ollama":
-    ollama_url = os.environ.get("OLLAMA_API_URL", "http://localhost:11434/api/generate")
+    ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+    # Preserve backward compatibility with OLLAMA_API_URL
+    ollama_url = os.environ.get("OLLAMA_API_URL", f"{ollama_base_url}/api/generate")
+    health_check_url = ollama_url.replace("/api/generate", "/api/tags")
+    
+    # We perform a health check connection with short timeout to not block UI startup time
     try:
-        # Quick health check connection to Ollama server
-        health_check_url = ollama_url.replace("/api/generate", "/api/tags")
-        response = requests.get(health_check_url, timeout=1)
+        response = requests.get(health_check_url, timeout=1.5)
         if response.status_code == 200:
-            st.sidebar.success("🟢 Connected to Local Ollama")
+            is_local = "localhost" in health_check_url or "127.0.0.1" in health_check_url
+            connection_label = "Local Ollama" if is_local else "Remote Ollama"
+            st.sidebar.success(f"🟢 Connected to {connection_label}")
             st.sidebar.caption(f"Active Model: `{os.environ.get('OLLAMA_MODEL', 'mistral')}`")
         else:
             st.sidebar.warning("⚠️ Ollama Connected (Status Warning)")
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        st.sidebar.error("🔴 Local Ollama Offline")
-        st.warning("### 🖥️ Local Ollama Server Offline")
+        is_local = "localhost" in health_check_url or "127.0.0.1" in health_check_url
+        host_label = "Local Ollama" if is_local else "Remote Ollama"
+        host_address = "localhost:11434" if is_local else ollama_base_url
+        
+        st.sidebar.error(f"🔴 {host_label} Offline")
+        st.warning(f"### 🖥️ {host_label} Server Offline")
         st.error(
-            "The platform is trying to connect to local Ollama on `localhost:11434` but the service "
+            f"The platform is trying to connect to {host_label.lower()} on `{host_address}` but the service "
             "is unresponsive.\n\n"
             "**If running locally:**\n"
             "Please ensure your Ollama service is active. Run `ollama serve` and verify `ollama list` contains the `mistral` model.\n\n"
+            "**If running in the cloud:**\n"
+            "Please ensure your remote Ollama server is running and the `OLLAMA_BASE_URL` environment variable is configured correctly.\n\n"
             "**If running in the cloud (Hugging Face Spaces):**\n"
             "Ollama offline models cannot run directly inside a CPU basic Space. You must switch to the **Groq API Cloud Provider**:\n"
             "1. Open your Space **Settings**.\n"
@@ -103,8 +114,83 @@ elif provider == "ollama":
         st.info("💡 Once environment variables are set in the settings, this application will automatically run the high-speed Groq inference pipeline!")
         st.stop()
 
-st.title("🚀 AI Resume Intelligence Platform")
-st.caption("Enterprise-Grade Resume Analysis using Advanced LLM Technology")
+
+# Injected Global Premium CSS for general application polish
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+    }
+    .stButton>button {
+        background: linear-gradient(135deg, #0052e0 0%, #1D4ED8 100%) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        border: none !important;
+        padding: 8px 20px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(0, 82, 224, 0.15) !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        width: 100% !important;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(0, 82, 224, 0.25) !important;
+        background: linear-gradient(135deg, #1D4ED8 0%, #0052e0 100%) !important;
+    }
+    .stDownloadButton>button {
+        background-color: transparent !important;
+        color: #0052e0 !important;
+        border: 1px solid #0052e0 !important;
+        border-radius: 12px !important;
+        padding: 8px 20px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        width: 100% !important;
+    }
+    .stDownloadButton>button:hover {
+        background-color: rgba(0, 82, 224, 0.05) !important;
+        transform: translateY(-1px) !important;
+    }
+    /* Elegant loader container */
+    .stSpinner > div {
+        border-top-color: #0052e0 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+logo_svg = """
+<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; margin-top: 10px;">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="url(#logo_grad)" />
+        <path d="M14 18C14 15.7909 15.7909 14 18 14H30C32.2091 14 34 15.7909 34 18V30C34 32.2091 32.2091 34 30 34H18C15.7909 34 14 32.2091 14 30V18Z" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M20 20H28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M20 24H28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M20 28H25" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <defs>
+            <linearGradient id="logo_grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#0052e0"/>
+                <stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+        </defs>
+    </svg>
+    <div>
+        <h1 style="margin: 0; font-size: 2.2rem; font-weight: 800; line-height: 1.1; background: linear-gradient(135deg, #0052e0 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">RESUME.AI</h1>
+        <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: gray; margin-top: 2px;">Enterprise Resume Intelligence</div>
+    </div>
+</div>
+"""
+
+st.markdown(logo_svg, unsafe_allow_html=True)
+st.caption("AI-Powered ATS Matching, Semantic Resume Parsing & Candidate Intelligence")
 
 # ========== MODE SELECTION ==========
 mode = st.radio(

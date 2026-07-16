@@ -2,6 +2,7 @@
 Semantic Skill Gap Analyzer Service.
 Uses SentenceTransformers to evaluate candidates' skill alignment against Job Descriptions.
 Features skill normalization, semantic similarity mapping, and customized learning recommendations.
+Keywords: Semantic Search, Embeddings, Vector Search, Cosine Similarity, Skill Gap Analysis.
 """
 
 import re

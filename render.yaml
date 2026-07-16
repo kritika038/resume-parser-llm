@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: resume-intelligence-platform
+    env: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    plan: free
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: LLM_PROVIDER
+        value: ollama
+      - key: OLLAMA_BASE_URL
+        value: http://localhost:11434
+      - key: OLLAMA_MODEL
+        value: mistral
+      - key: OLLAMA_TIMEOUT
+        value: 90
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant

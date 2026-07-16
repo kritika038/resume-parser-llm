@@ -1,7 +1,8 @@
 """
-Job Description (JD) matching service.
-Analyzes skill alignment between resume and job requirements using both
-keyword matching and semantic similarity.
+Job Description (JD) Matcher & Semantic Ranker.
+Leverages SentenceTransformers (all-MiniLM-L6-v2) for vector encoding and cosine similarity computation.
+Performs semantic vector search matching alongside traditional keyword matching.
+Keywords: Semantic Search, Embeddings, Vector Search, Cosine Similarity, ATS, Resume Screening, RAG.
 """
 
 import re

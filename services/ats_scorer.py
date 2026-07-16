@@ -1,6 +1,7 @@
 """
-ATS (Applicant Tracking System) scoring service.
-Evaluates resume compatibility with ATS systems.
+Applicant Tracking System (ATS) Scorer.
+Grades resume formatting compliance, section completeness, and structure.
+Keywords: ATS, Resume Intelligence, Formatting Evaluation, Parser Reliability.
 """
 
 from typing import Dict, Any, Optional

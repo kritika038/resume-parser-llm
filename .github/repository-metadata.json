@@ -1,0 +1,19 @@
+{
+  "description": "Resume.AI - Enterprise-grade AI Resume Parser, ATS Scoring Pipeline, and Semantic Search Matching Platform leveraging Generative AI, local/cloud LLMs (Ollama + Groq), and Vector Embeddings.",
+  "topics": [
+    "ai-resume-parser",
+    "llm",
+    "generative-ai",
+    "prompt-engineering",
+    "semantic-search",
+    "embeddings",
+    "vector-search",
+    "ats-scoring",
+    "resume-intelligence",
+    "rag",
+    "json-validation",
+    "evaluation-framework",
+    "ai-engineering",
+    "production-ai"
+  ]
+}

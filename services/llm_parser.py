@@ -1,6 +1,8 @@
 """
-LLM-based resume parsing service.
-Handles communication with Ollama Mistral model and JSON output processing.
+LLM Resume Parsing Service with Factual Validation.
+Invokes local or cloud LLM instances with structured JSON schema prompt templates.
+Performs downstream JSON validation, sanitization, and entity verification to prevent hallucinations.
+Keywords: LLMs, Generative AI, Prompt Engineering, JSON Validation, Resume Intelligence, Hallucination Control.
 """
 
 import requests
@@ -31,7 +33,8 @@ def call_llm(prompt: str) -> Optional[str]:
         None: If both primary and fallback providers fail
     """
     is_hf_space = "SPACE_ID" in os.environ
-    default_provider = "groq" if is_hf_space else "ollama"
+    is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ
+    default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
     primary_provider_name = os.environ.get("LLM_PROVIDER", default_provider).strip().lower()
     
     # 1. Attempt Primary provider execution

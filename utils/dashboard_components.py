@@ -15,10 +15,12 @@ def inject_dashboard_styles():
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
         /* Modern recruiter dashboard typography & layout */
         .recruiter-dashboard {
-            margin-top: 10px;
-            font-family: inherit;
+            margin-top: 15px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         
         /* Grid container for metric cards */
@@ -31,13 +33,15 @@ def inject_dashboard_styles():
         
         /* Premium Card style with glassmorphic accents */
         .recruiter-card {
-            background-color: var(--secondary-background-color, #f0f2f6);
-            color: var(--text-color, #31333F);
+            background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.65));
+            color: var(--text-color, #1F2937);
             border-radius: 16px;
-            padding: 22px;
-            border: 1px solid rgba(49, 51, 63, 0.12);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 24px;
+            border: 1px solid rgba(49, 51, 63, 0.08);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
         }
@@ -48,10 +52,10 @@ def inject_dashboard_styles():
             position: absolute;
             top: 0;
             left: 0;
-            width: 4px;
+            width: 5px;
             height: 100%;
-            background: var(--primary-color, #FF4B4B);
-            opacity: 0.8;
+            background: var(--primary-color, #0052e0);
+            opacity: 0.9;
         }
         
         .recruiter-card.card-ats::before {
@@ -71,45 +75,47 @@ def inject_dashboard_styles():
         }
         
         .recruiter-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            border-color: rgba(49, 51, 63, 0.25);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+            border-color: rgba(49, 51, 63, 0.2);
+            background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.85));
         }
         
         .card-header-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         
         .card-title-text {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            opacity: 0.7;
+            letter-spacing: 0.1em;
+            opacity: 0.75;
         }
         
         .card-icon {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            opacity: 0.9;
         }
         
         .card-value-display {
-            font-size: 2.25rem;
+            font-size: 2.5rem;
             font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 6px;
-            letter-spacing: -0.02em;
+            line-height: 1.05;
+            margin-bottom: 8px;
+            letter-spacing: -0.03em;
         }
         
         .card-subtitle-display {
-            font-size: 0.825rem;
+            font-size: 0.85rem;
             font-weight: 500;
             opacity: 0.85;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
         }
         
         /* Modern chip badges for skills */
@@ -117,57 +123,58 @@ def inject_dashboard_styles():
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 10px;
-            margin-bottom: 15px;
+            margin-top: 12px;
+            margin-bottom: 18px;
         }
         
         .chip-badge {
             padding: 6px 14px;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 600;
             letter-spacing: 0.01em;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             border: 1px solid rgba(128, 128, 128, 0.15);
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .chip-badge:hover {
-            transform: scale(1.03);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
         
         .chip-badge.badge-match {
-            background-color: rgba(16, 185, 129, 0.1);
+            background-color: rgba(16, 185, 129, 0.08);
             color: #10B981;
-            border-color: rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.22);
         }
         
         .chip-badge.badge-gap {
-            background-color: rgba(239, 68, 68, 0.1);
+            background-color: rgba(239, 68, 68, 0.08);
             color: #EF4444;
-            border-color: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.22);
         }
         
         .chip-badge.badge-normal {
-            background-color: rgba(59, 130, 246, 0.1);
+            background-color: rgba(59, 130, 246, 0.08);
             color: #3B82F6;
-            border-color: rgba(59, 130, 246, 0.25);
+            border-color: rgba(59, 130, 246, 0.22);
         }
         
         /* Timeline component styles */
         .timeline-container {
             position: relative;
-            padding-left: 20px;
-            margin-top: 15px;
+            padding-left: 24px;
+            margin-top: 20px;
         }
         
         .timeline-container::before {
             content: '';
             position: absolute;
             top: 5px;
-            left: 4px;
+            left: 5px;
             width: 2px;
             height: calc(100% - 20px);
             background-color: rgba(49, 51, 63, 0.12);
@@ -175,125 +182,146 @@ def inject_dashboard_styles():
         
         .timeline-node {
             position: relative;
-            padding-bottom: 22px;
+            padding-bottom: 24px;
         }
         
         .timeline-node::before {
             content: '';
             position: absolute;
-            left: -20px;
-            top: 5px;
-            width: 10px;
-            height: 10px;
+            left: -24px;
+            top: 6px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background-color: var(--primary-color, #FF4B4B);
+            background-color: var(--primary-color, #0052e0);
             border: 2px solid var(--background-color, #ffffff);
-            box-shadow: 0 0 0 3px rgba(255, 75, 75, 0.15);
+            box-shadow: 0 0 0 3px rgba(0, 82, 224, 0.15);
+            animation: pulse 2.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 82, 224, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(0, 82, 224, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 82, 224, 0);
+            }
         }
         
         .timeline-role-text {
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            color: var(--text-color, #1F2937);
         }
         
         .timeline-meta-text {
-            font-size: 0.825rem;
-            opacity: 0.8;
-            margin-bottom: 8px;
+            font-size: 0.85rem;
+            opacity: 0.85;
+            margin-bottom: 10px;
             font-weight: 500;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
         }
         
         .timeline-bullet {
-            font-size: 0.85rem;
-            margin-left: 10px;
-            margin-bottom: 4px;
-            line-height: 1.4;
+            font-size: 0.88rem;
+            margin-left: 12px;
+            margin-bottom: 6px;
+            line-height: 1.5;
             opacity: 0.9;
         }
         
         /* Recruiter Executive Summary container */
         .exec-summary-box {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.04) 0%, rgba(139, 92, 246, 0.04) 100%);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
             border-left: 4px solid #3B82F6;
-            border-radius: 4px 12px 12px 4px;
-            padding: 20px;
-            margin-bottom: 25px;
+            border-radius: 4px 16px 16px 4px;
+            padding: 22px;
+            margin-bottom: 28px;
             border-top: 1px solid rgba(59, 130, 246, 0.08);
             border-right: 1px solid rgba(59, 130, 246, 0.08);
             border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
         }
         
         .exec-summary-title {
-            font-size: 0.85rem;
-            font-weight: 700;
+            font-size: 0.88rem;
+            font-weight: 750;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             color: #3B82F6;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .exec-summary-text {
-            font-size: 0.95rem;
-            line-height: 1.5;
+            font-size: 0.98rem;
+            line-height: 1.55;
             font-style: italic;
+            color: var(--text-color, #374151);
         }
 
         /* Leaderboard table styles */
         .leaderboard-container {
             width: 100%;
             overflow-x: auto;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            border-radius: 12px;
-            border: 1px solid rgba(49, 51, 63, 0.12);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-top: 15px;
+            margin-bottom: 35px;
+            border-radius: 16px;
+            border: 1px solid rgba(49, 51, 63, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            backdrop-filter: blur(10px);
         }
         
         .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
         }
         
         .leaderboard-table th {
-            background-color: var(--secondary-background-color, #f0f2f6);
-            color: var(--text-color, #31333F);
+            background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.7));
+            color: var(--text-color, #1F2937);
             font-weight: 700;
-            padding: 14px 18px;
-            border-bottom: 2px solid rgba(49, 51, 63, 0.15);
+            padding: 16px 20px;
+            border-bottom: 2px solid rgba(49, 51, 63, 0.12);
             text-transform: uppercase;
-            font-size: 0.725rem;
-            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
         }
         
         .leaderboard-table td {
-            padding: 14px 18px;
-            border-bottom: 1px solid rgba(49, 51, 63, 0.08);
-            color: var(--text-color, #31333F);
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(49, 51, 63, 0.06);
+            color: var(--text-color, #374151);
             font-weight: 500;
             vertical-align: middle;
         }
         
         .leaderboard-table tr:hover {
-            background-color: rgba(49, 51, 63, 0.03);
+            background-color: rgba(49, 51, 63, 0.02);
         }
         
         /* Rank and Score Pill Styling */
         .rank-cell-display {
             font-weight: 800 !important;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
+            color: var(--text-color, #111827);
         }
         
         .leaderboard-pill {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 700;
             text-align: center;
         }
@@ -301,20 +329,20 @@ def inject_dashboard_styles():
         .leaderboard-pill.pill-overall {
             background: linear-gradient(135deg, #3B82F6, #1D4ED8);
             color: white;
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.22);
         }
         
         .leaderboard-pill.pill-ats {
-            background-color: rgba(16, 185, 129, 0.12);
+            background-color: rgba(16, 185, 129, 0.08);
             color: #10B981;
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.18);
         }
         
         /* Mini progress bar cell */
         .mini-progress-container {
             width: 100px;
-            background-color: rgba(49, 51, 63, 0.1);
-            border-radius: 4px;
+            background-color: rgba(49, 51, 63, 0.08);
+            border-radius: 6px;
             height: 8px;
             overflow: hidden;
             display: inline-block;
@@ -324,15 +352,15 @@ def inject_dashboard_styles():
         
         .mini-progress-bar {
             height: 100%;
-            border-radius: 4px;
+            border-radius: 6px;
         }
         
         .mini-progress-bar.bar-jd {
-            background-color: #3B82F6;
+            background: linear-gradient(90deg, #3B82F6, #60A5FA);
         }
         
         .mini-progress-bar.bar-semantic {
-            background-color: #8B5CF6;
+            background: linear-gradient(90deg, #8B5CF6, #A78BFA);
         }
         </style>
         """,
