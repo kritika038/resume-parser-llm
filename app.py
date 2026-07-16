@@ -508,21 +508,27 @@ if mode == "Single Resume":
                 # Buttons layout
                 col_exp1, col_exp2 = st.columns(2)
                 with col_exp1:
-                    st.download_button(
-                        "📥 Download JSON Data",
-                        data=json_str,
-                        file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
-                        mime="application/json",
-                        use_container_width=True
-                    )
+                    if json_str is not None:
+                        st.download_button(
+                            "📥 Download JSON Data",
+                            data=json_str,
+                            file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
+                            mime="application/json",
+                            use_container_width=True
+                        )
+                    else:
+                        st.error("⚠️ Unable to generate JSON data.")
                 with col_exp2:
-                    st.download_button(
-                        "📄 Download Recruiter PDF Report",
-                        data=pdf_bytes,
-                        file_name=f"recruiter_report_{parsed_data.get('name', 'candidate')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
+                    if pdf_bytes is not None:
+                        st.download_button(
+                            "📄 Download Recruiter PDF Report",
+                            data=pdf_bytes,
+                            file_name=f"recruiter_report_{parsed_data.get('name', 'candidate')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                    else:
+                        st.error("⚠️ Unable to generate PDF report.")
                 
                 # Clipboard Copy sections
                 st.markdown("#### 📋 Copy Snippets")
@@ -820,23 +826,29 @@ else:
             
             with col_j:
                 json_export = comparator.export_results(format="json")
-                st.download_button(
-                    "📥 Download JSON",
-                    data=json_export,
-                    file_name="candidates.json",
-                    mime="application/json",
-                    use_container_width=True
-                )
+                if json_export is not None:
+                    st.download_button(
+                        "📥 Download JSON",
+                        data=json_export,
+                        file_name="candidates.json",
+                        mime="application/json",
+                        use_container_width=True
+                    )
+                else:
+                    st.error("⚠️ Unable to generate JSON export.")
             
             with col_c:
                 csv_export = comparator.export_results(format="csv")
-                st.download_button(
-                    "📊 Download CSV",
-                    data=csv_export,
-                    file_name="candidates.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
+                if csv_export is not None:
+                    st.download_button(
+                        "📊 Download CSV",
+                        data=csv_export,
+                        file_name="candidates.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                else:
+                    st.error("⚠️ Unable to generate CSV export.")
         except Exception as e:
             logger.error(f"Critical bulk comparison exception: {e}", exc_info=True)
             st.error("❌ A Critical Bulk Processing Error Occurred")

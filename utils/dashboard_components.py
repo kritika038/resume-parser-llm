@@ -1296,6 +1296,25 @@ def generate_pdf_report(
     
     # Recommendations
     story.append(Paragraph("AI Recommendations", section_style))
+    clean_sug = suggestions.replace("- Suggestion", "\n• Suggestion")
+    story.append(Paragraph(clean_sug or "No suggestions available.", body_style))
+    
+    try:
+        doc.build(story)
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        return pdf_bytes
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF document compilation failed: {e}", exc_info=True)
+        # Create a simple fallback document
+        fallback_buffer = BytesIO()
+        fallback_doc = SimpleDocTemplate(fallback_buffer, pagesize=letter)
+        fallback_story = [Paragraph(f"Recruiter Briefing compilation error: {str(e)}", body_style)]
+        fallback_doc.build(fallback_story)
+        pdf_bytes = fallback_buffer.getvalue()
+        fallback_buffer.close()
+        return pdf_bytes
 
 
 def clean_markdown_text(text: str) -> str:
