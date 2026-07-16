@@ -404,7 +404,7 @@ def inject_dashboard_styles():
     )
 
 
-def render_metric_card(title: str, value: str, subtitle: str, icon: str, color_class: str):
+def render_metric_card(title: str, value: str, subtitle: str, icon: str, color_class: str, help_text: str = ""):
     """
     Renders a single recruiter dashboard metric card.
     
@@ -414,12 +414,15 @@ def render_metric_card(title: str, value: str, subtitle: str, icon: str, color_c
         subtitle: Quick contextual description
         icon: Emoji representation of the card
         color_class: Class identifier for theme color ('card-ats', 'card-jd', 'card-skills', 'card-exp')
+        help_text: Tooltip explanation
     """
+    tooltip_attr = f'title="{help_text}"' if help_text else ''
+    title_suffix = ' ℹ️' if help_text else ''
     st.markdown(
         f"""
         <div class="recruiter-card {color_class}">
             <div class="card-header-row">
-                <span class="card-title-text">{title}</span>
+                <span class="card-title-text" {tooltip_attr} style="cursor: help;">{title}{title_suffix}</span>
                 <span class="card-icon">{icon}</span>
             </div>
             <div class="card-value-display">{value}</div>
@@ -810,16 +813,17 @@ def render_recruiter_dashboard(
     # 3. METRICS ROW (Renamed for TASK 2)
     col1, col2, col3, col4 = st.columns(4)
     
-    # ATS Card (Renamed to ATS Resume Quality)
+    # ATS Card (Renamed to Resume Quality for clarity)
     from services.ats_scorer import get_ats_interpretation
     ats_interp = get_ats_interpretation(ats_score).split(" - ")[0]
     with col1:
         render_metric_card(
-            title="ATS Resume Quality",
+            title="Resume Quality",
             value=f"{ats_score}/100",
-            subtitle=f"🎯 {ats_interp}",
+            subtitle="ATS Formatting & Resume Structure",
             icon="🎯",
-            color_class="card-ats"
+            color_class="card-ats",
+            help_text="Resume Quality measures ATS compatibility, formatting, and resume completeness. It is different from Job Description Match and Technical Skill Coverage."
         )
         
     # JD Match Card (Renamed to Semantic JD Match)
@@ -838,7 +842,8 @@ def render_recruiter_dashboard(
             value=jd_value,
             subtitle=jd_sub,
             icon="💼",
-            color_class="card-jd"
+            color_class="card-jd",
+            help_text="Semantic JD Match measures the conceptual and semantic alignment between the resume text and the job description, using advanced vector space embeddings."
         )
         
     # Skills Match Percentage (Renamed to Technical Skill Coverage)
@@ -866,7 +871,8 @@ def render_recruiter_dashboard(
             value=skills_value,
             subtitle=skills_sub,
             icon="🛠️",
-            color_class="card-skills"
+            color_class="card-skills",
+            help_text="Technical Skill Coverage measures the exact matching percentage of required technical skills and tools extracted from the job description against the resume profile."
         )
         
     # Experience Level Card
@@ -1224,7 +1230,7 @@ def generate_pdf_report(
     # Metrics Table
     data = [
         ["Metric", "Value", "Status"],
-        ["ATS Resume Quality", f"{ats_score}/100", "ATS Ready" if ats_score >= 80 else "Needs Improvement"],
+        ["Resume Quality", f"{ats_score}/100", "ATS Ready" if ats_score >= 80 else "Needs Improvement"],
         ["Semantic JD Match", f"{jd_match_score}%" if jd_match_score else "N/A", "Aligned" if jd_match_score >= 70 else "Review Gaps"],
     ]
     t = Table(data, colWidths=[150, 100, 150])
