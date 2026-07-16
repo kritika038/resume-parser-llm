@@ -821,20 +821,20 @@ def render_recruiter_dashboard(
     
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 3. METRICS ROW (Renamed for TASK 2)
+    # 3. METRICS ROW (Renamed for TASK 1)
     col1, col2, col3, col4 = st.columns(4)
     
-    # ATS Card (Renamed to Resume Quality for clarity)
+    # ATS Card (Renamed to ATS Formatting Score)
     from services.ats_scorer import get_ats_interpretation
     ats_interp = get_ats_interpretation(ats_score).split(" - ")[0]
     with col1:
         render_metric_card(
-            title="Resume Quality",
+            title="ATS Formatting Score",
             value=f"{ats_score}/100",
-            subtitle="ATS Formatting & Resume Structure",
+            subtitle="Measures formatting, readability, section completeness, and ATS compliance.",
             icon="🎯",
             color_class="card-ats",
-            help_text="Resume Quality measures ATS compatibility, formatting, and resume completeness. It is different from Job Description Match and Technical Skill Coverage."
+            help_text="ATS Formatting Score measures layout compatibility, document structure, section headers, and formatting completeness. It is separate from job description matching."
         )
         
     # JD Match Card (Renamed to Semantic JD Match)
@@ -914,6 +914,13 @@ def render_recruiter_dashboard(
         )
         
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Task 2: Add info banner below cards grid
+    st.info(
+        "⚠️ **Note for Recruiters:** ATS Formatting Score evaluates formatting layout and parser compatibility. "
+        "Semantic JD Match evaluates conceptual similarity against the job description using vector embeddings. "
+        "These are independent metrics."
+    )
     
     # 4. LOWER SECTION (EXECUTIVE PROFILE + EXPERIENCE AND SKILLS GRID)
     sec_col1, sec_col2 = st.columns([1.1, 0.9])
@@ -1241,7 +1248,7 @@ def generate_pdf_report(
     # Metrics Table
     data = [
         ["Metric", "Value", "Status"],
-        ["Resume Quality", f"{ats_score}/100", "ATS Ready" if ats_score >= 80 else "Needs Improvement"],
+        ["ATS Formatting Score", f"{ats_score}/100", "ATS Excellent" if ats_score >= 80 else "Review Formatting"],
         ["Semantic JD Match", f"{jd_match_score}%" if jd_match_score else "N/A", "Aligned" if jd_match_score >= 70 else "Review Gaps"],
     ]
     t = Table(data, colWidths=[150, 100, 150])
@@ -1298,16 +1305,35 @@ def generate_pdf_report(
     return pdf_bytes
 
 
+def clean_markdown_text(text: str) -> str:
+    """
+    Cleans raw markdown characters (*, **, #, etc.) from the text.
+    """
+    import re
+    # Remove bold markdown formatting (**text** -> text)
+    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+    # Remove any remaining ** or * characters
+    text = text.replace("**", "").replace("*", "")
+    # Remove header hash characters (#)
+    text = re.sub(r'#+\s*', '', text)
+    # Strip whitespace
+    return text.strip()
+
+
 def render_premium_suggestions(suggestions_text: str):
     """
     Parses and displays raw AI suggestions as beautifully styled premium cards.
+    Cleans markdown formatting and presents recommendations in structured columns.
     """
     import re
     if not suggestions_text:
         st.warning("No suggestions available.")
         return
         
-    lines = [line.strip() for line in suggestions_text.split("\n") if line.strip()]
+    cleaned_full_text = clean_markdown_text(suggestions_text)
+    
+    # Split by Suggestion header or bullet items
+    lines = [line.strip() for line in cleaned_full_text.split("\n") if line.strip()]
     suggestions = []
     
     current_sug = ""
@@ -1331,25 +1357,58 @@ def render_premium_suggestions(suggestions_text: str):
         if bullets:
             suggestions = bullets
         else:
-            suggestions = [suggestions_text]
+            suggestions = [s.strip() for s in cleaned_full_text.split("\n\n") if s.strip()]
+            
+    # Limit to maximum 3 recommendations
+    suggestions = suggestions[:3]
             
     st.markdown("### 💡 AI Strategic Resume Recommendations")
-    st.caption("Factual and actionable steps to elevate ATS score and candidate JD alignment:")
+    st.caption("Actionable recommendations to enhance your formatting structure and job description match:")
     st.markdown("<br>", unsafe_allow_html=True)
     
     for idx, sug in enumerate(suggestions, 1):
-        priority = "🔴 High Priority" if idx == 1 else ("🟡 Medium Priority" if idx == 2 else "🟢 Low Priority")
+        priority_label = "🔴 HIGH PRIORITY" if idx == 1 else ("🟠 MEDIUM PRIORITY" if idx == 2 else "🟢 LOW PRIORITY")
+        priority_color = "#EF4444" if idx == 1 else ("#F97316" if idx == 2 else "#10B981")
         
+        # We cleanly split the suggestion text into sub-elements
+        problem_text = "Identified area for structural refinement in candidate CV details."
+        recommendation_text = sug
+        impact_text = "Increases ATS structural compatibility scoring matrix index and recruiter visibility."
+        
+        if "problem" in sug.lower():
+            p_match = re.search(r'problem:?\s*(.*?)(?=recommendation|impact|$)', sug, re.IGNORECASE | re.DOTALL)
+            if p_match:
+                problem_text = p_match.group(1).strip()
+        if "recommendation" in sug.lower():
+            r_match = re.search(r'recommendation:?\s*(.*?)(?=impact|problem|$)', sug, re.IGNORECASE | re.DOTALL)
+            if r_match:
+                recommendation_text = r_match.group(1).strip()
+        if "impact" in sug.lower():
+            i_match = re.search(r'impact:?\s*(.*?)(?=problem|recommendation|$)', sug, re.IGNORECASE | re.DOTALL)
+            if i_match:
+                impact_text = i_match.group(1).strip()
+                
+        # Clean any remaining markdown in sub-elements
+        problem_text = clean_markdown_text(problem_text)
+        recommendation_text = clean_markdown_text(recommendation_text)
+        impact_text = clean_markdown_text(impact_text)
+        
+        # Ensure they fit standard height/line bounds (concise)
+        if len(recommendation_text) > 250:
+            recommendation_text = recommendation_text[:247] + "..."
+            
         st.markdown(
             f"""
             <div style="background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.45)); border: 1px solid rgba(49, 51, 63, 0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span style="font-size: 0.8rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; color: gray;">Suggestion #{idx}</span>
-                    <span style="font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; background-color: rgba(128,128,128,0.1);">{priority}</span>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 0.8rem; font-weight: 800; color: {priority_color}; border: 1px solid {priority_color}; padding: 3px 8px; border-radius: 6px; background-color: rgba(128,128,128,0.05);">{priority_label}</span>
                 </div>
-                <div style="margin-bottom: 8px;"><strong>⚠️ Problem Area:</strong> Structure or keyword density mismatch against targeted job roles.</div>
-                <div style="margin-bottom: 8px;"><strong>💡 Actionable Recommendation:</strong> {sug}</div>
-                <div><strong>🚀 Expected Impact:</strong> Maximizes ATS parsing compatibility and structural validation index metrics.</div>
+                <div style="margin-bottom: 8px;"><strong>Problem</strong></div>
+                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95;">{problem_text}</div>
+                <div style="margin-bottom: 8px;"><strong>Recommendation</strong></div>
+                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95;">{recommendation_text}</div>
+                <div style="margin-bottom: 8px;"><strong>Expected Impact</strong></div>
+                <div style="font-size: 0.92rem; opacity: 0.95;">{impact_text}</div>
             </div>
             """,
             unsafe_allow_html=True

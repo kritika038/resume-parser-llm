@@ -534,7 +534,7 @@ if mode == "Single Resume":
                     st.markdown("**Recruiter Analysis Summary**")
                     analysis_summary = (
                         f"Candidate Name: {parsed_data.get('name', 'N/A')}\n"
-                        f"Resume Quality Score: {ats_score}/100\n"
+                        f"ATS Formatting Score: {ats_score}/100\n"
                         f"Semantic JD Match Score: {jd_match_score}%\n"
                         f"Missing Core Requirements: {', '.join(skill_gaps) if skill_gaps else 'None'}\n"
                         f"AI Recruiter Summary:\n{parsed_data.get('summary', 'N/A')}"
@@ -554,7 +554,7 @@ if mode == "Single Resume":
                         <p style="font-style: italic;">"{parsed_data.get('summary', 'No summary available.')}"</p>
                         <h5 style="margin-bottom: 5px; margin-top: 15px;">📊 Key Metrics</h5>
                         <ul>
-                            <li><strong>Resume Quality Score</strong>: {ats_score}/100</li>
+                            <li><strong>ATS Formatting Score</strong>: {ats_score}/100</li>
                             <li><strong>Semantic JD Match Rating</strong>: {jd_match_score}%</li>
                         </ul>
                         <h5 style="margin-bottom: 5px; margin-top: 15px;">🛠️ Technical Skills & Gaps</h5>
