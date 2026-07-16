@@ -20,7 +20,7 @@ from services.jd_matcher import (
     combined_match_score
 )
 from services.candidate_comparator import CandidateComparator, extract_pdf_from_bytes
-from utils.dashboard_components import render_recruiter_dashboard, render_bulk_leaderboard
+from utils.dashboard_components import render_recruiter_dashboard, render_bulk_leaderboard, generate_pdf_report, render_premium_suggestions
 from services.llm_providers import get_config_value
 
 # Configure logging
@@ -61,11 +61,42 @@ is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT"
 default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
 provider = get_config_value("LLM_PROVIDER", default_provider).strip().lower()
 
-# Render System Diagnostics in the sidebar at the top of configuration
+# Render System Diagnostics and Status Badges in the sidebar for TASK 7
 st.sidebar.markdown("### 🔌 System Diagnostics")
 st.sidebar.write(f"**Environment**: `{detect_env()}`")
 st.sidebar.write(f"**Active Provider**: `{provider.upper()}`")
-st.sidebar.write(f"**Groq API Key**: `{'Configured' if get_config_value('GROQ_API_KEY') else 'Missing'}`")
+
+# Render badges
+st.sidebar.markdown("### 🚦 Service Status")
+st.sidebar.markdown(
+    '<span style="background-color: rgba(16, 185, 129, 0.12); color: #10B981; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; border: 1px solid rgba(16,185,129,0.2);">● LIVE</span>',
+    unsafe_allow_html=True
+)
+
+env_label = detect_env()
+is_cloud_prod = env_label.startswith("Production")
+if is_cloud_prod:
+    st.sidebar.markdown(
+        '<span style="background-color: rgba(59, 130, 246, 0.12); color: #3B82F6; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; border: 1px solid rgba(59,130,246,0.2); margin-top: 5px; display: inline-block;">☁️ Production</span>',
+        unsafe_allow_html=True
+    )
+else:
+    st.sidebar.markdown(
+        '<span style="background-color: rgba(245, 158, 11, 0.12); color: #F59E0B; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; border: 1px solid rgba(245,158,11,0.2); margin-top: 5px; display: inline-block;">💻 Local Dev</span>',
+        unsafe_allow_html=True
+    )
+
+if provider == "groq" and get_config_value("GROQ_API_KEY"):
+    st.sidebar.markdown(
+        '<span style="background-color: rgba(249, 115, 22, 0.12); color: #F97316; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; border: 1px solid rgba(249,115,22,0.2); margin-top: 5px; display: inline-block;">⚡ Groq Connected</span>',
+        unsafe_allow_html=True
+    )
+else:
+    st.sidebar.markdown(
+        '<span style="background-color: rgba(139, 92, 246, 0.12); color: #8B5CF6; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; border: 1px solid rgba(139,92,246,0.2); margin-top: 5px; display: inline-block;">🧠 Ollama Supported</span>',
+        unsafe_allow_html=True
+    )
+
 st.sidebar.divider()
 
 if provider == "groq":
@@ -378,6 +409,16 @@ if mode == "Single Resume":
             # ========== RESULTS DISPLAY ==========
             st.header("📊 Analysis Results")
             
+            # Resolve flat skills list for report output
+            skills_val = parsed_data.get("skills", [])
+            flat_skills = []
+            if isinstance(skills_val, list):
+                flat_skills = skills_val
+            elif isinstance(skills_val, dict):
+                for val in skills_val.values():
+                    if isinstance(val, list):
+                        flat_skills.extend(val)
+
             # Results Tabs
             tab1, tab2, tab3, tab4, tab5 = st.tabs([
                 "💼 Recruiter Dashboard",
@@ -445,18 +486,87 @@ if mode == "Single Resume":
             
             with tab4:
                 if suggestions:
-                    st.write(suggestions)
+                    render_premium_suggestions(suggestions)
                 else:
                     st.warning("Could not generate suggestions.")
             
             with tab5:
                 json_str = json.dumps(parsed_data, indent=2)
-                st.download_button(
-                    "📥 JSON",
-                    data=json_str,
-                    file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
-                    mime="application/json",
-                    use_container_width=True
+                
+                # Report compilation bytes
+                pdf_bytes = generate_pdf_report(
+                    parsed_data=parsed_data,
+                    ats_score=ats_score,
+                    jd_match_score=jd_match_score,
+                    match_details=match_details,
+                    skill_gaps=skill_gaps,
+                    suggestions=suggestions or ""
+                )
+                
+                st.markdown("### 📥 Recruiter Export Console")
+                
+                # Buttons layout
+                col_exp1, col_exp2 = st.columns(2)
+                with col_exp1:
+                    st.download_button(
+                        "📥 Download JSON Data",
+                        data=json_str,
+                        file_name=f"resume_{parsed_data.get('name', 'candidate')}.json",
+                        mime="application/json",
+                        use_container_width=True
+                    )
+                with col_exp2:
+                    st.download_button(
+                        "📄 Download Recruiter PDF Report",
+                        data=pdf_bytes,
+                        file_name=f"recruiter_report_{parsed_data.get('name', 'candidate')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                
+                # Clipboard Copy sections
+                st.markdown("#### 📋 Copy Snippets")
+                col_cpy1, col_cpy2 = st.columns(2)
+                with col_cpy1:
+                    st.markdown("**Structured JSON Output (Click copy icon in upper right)**")
+                    st.code(json_str, language="json")
+                with col_cpy2:
+                    st.markdown("**Recruiter Analysis Summary**")
+                    analysis_summary = (
+                        f"Candidate Name: {parsed_data.get('name', 'N/A')}\n"
+                        f"ATS Resume Quality Score: {ats_score}/100\n"
+                        f"Semantic JD Match Score: {jd_match_score}%\n"
+                        f"Missing Core Requirements: {', '.join(skill_gaps) if skill_gaps else 'None'}\n"
+                        f"AI Recruiter Summary:\n{parsed_data.get('summary', 'N/A')}"
+                    )
+                    st.code(analysis_summary, language="text")
+                
+                # Recruiter Report Preview for TASK 6
+                st.divider()
+                st.markdown("### 📋 Recruiter Report Preview")
+                st.markdown(
+                    f"""
+                    <div style="background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.3)); border: 1px solid rgba(49, 51, 63, 0.08); border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                        <h4 style="margin-top: 0; color: #0052e0;">Recruiter Briefing: {parsed_data.get('name', 'Candidate')}</h4>
+                        <p style="font-size: 0.85rem; opacity: 0.8;">Email: {parsed_data.get('email', 'N/A')} | Phone: {parsed_data.get('phone', 'N/A')}</p>
+                        <hr style="margin: 15px 0; border: 0; border-top: 1px solid rgba(49,51,63,0.1);" />
+                        <h5 style="margin-bottom: 5px;">👤 Candidate Profile Summary</h5>
+                        <p style="font-style: italic;">"{parsed_data.get('summary', 'No summary available.')}"</p>
+                        <h5 style="margin-bottom: 5px; margin-top: 15px;">📊 Key Metrics</h5>
+                        <ul>
+                            <li><strong>ATS Resume Quality Score</strong>: {ats_score}/100</li>
+                            <li><strong>Semantic JD Match Rating</strong>: {jd_match_score}%</li>
+                        </ul>
+                        <h5 style="margin-bottom: 5px; margin-top: 15px;">🛠️ Technical Skills & Gaps</h5>
+                        <ul>
+                            <li><strong>Extracted Skills</strong>: {', '.join(flat_skills) if flat_skills else 'None'}</li>
+                            <li><strong>Missing Core Requirements</strong>: {', '.join(skill_gaps) if skill_gaps else 'None'}</li>
+                        </ul>
+                        <h5 style="margin-bottom: 5px; margin-top: 15px;">💡 AI Improvement Pathway Suggestions</h5>
+                        <p>{suggestions or "No suggestions available."}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
                 
             # If Show Debug Panel is checked, show debug metrics & panels

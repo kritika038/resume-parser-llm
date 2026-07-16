@@ -23,6 +23,42 @@ def inject_dashboard_styles():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         
+        /* Executive Summary Grid & Cards */
+        .exec-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .exec-card {
+            background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.45));
+            border: 1px solid rgba(49, 51, 63, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .exec-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border-color: rgba(49, 51, 63, 0.15);
+        }
+        .exec-card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: gray;
+            margin-bottom: 6px;
+        }
+        .exec-card-value {
+            font-size: 1.0rem;
+            font-weight: 800;
+            color: var(--text-color, #1F2937);
+        }
+        
         /* Grid container for metric cards */
         .dashboard-grid {
             display: grid;
@@ -694,22 +730,99 @@ def render_recruiter_dashboard(
             
     exec_summary = st.session_state[summary_key]
     
-    # 3. METRICS ROW
+    # Compute Executive summary details for TASK 1
+    skills_percent = semantic_gaps.get("match_percentage", 0) if (jd_text and jd_text.strip()) else 75
+    effective_jd_match = jd_match_score if (jd_text and jd_text.strip()) else 70
+    overall_score = (ats_score * 0.3) + (effective_jd_match * 0.4) + (skills_percent * 0.3)
+    
+    # Stars & Assessment
+    if overall_score >= 85:
+        rating = "★★★★★ Strong Candidate"
+    elif overall_score >= 70:
+        rating = "★★★★☆ Good Candidate"
+    elif overall_score >= 50:
+        rating = "★★★☆☆ Moderate Candidate"
+    else:
+        rating = "★★☆☆☆ Needs Development"
+        
+    # ATS Readiness
+    ats_ready = "ATS Ready" if ats_score >= 80 else ("Review Formatting" if ats_score >= 60 else "Not ATS Compatible")
+    
+    # JD Alignment
+    if jd_text and jd_text.strip():
+        jd_align = "Highly Aligned" if effective_jd_match >= 80 else ("Satisfactory Alignment" if effective_jd_match >= 60 else "Low Alignment")
+    else:
+        jd_align = "N/A - No JD Provided"
+        
+    # Technical Skill Coverage
+    if jd_text and jd_text.strip():
+        missing_skills = semantic_gaps.get("missing_skills", [])
+        if missing_skills:
+            skill_cov = f"Needs Improvement in {missing_skills[0]}" if len(missing_skills[0]) < 18 else "Requires Tech Polish"
+        else:
+            skill_cov = "Excellent Coverage"
+    else:
+        skill_cov = "Extracted Verified Skills"
+        
+    # Recruiter Recommendation
+    if overall_score >= 85:
+        rec_recommend = "Highly Recommended"
+    elif overall_score >= 70:
+        rec_recommend = "Recommended for Interview"
+    elif overall_score >= 50:
+        rec_recommend = "Consider for Alternate Role"
+    else:
+        rec_recommend = "Not Recommended for Role"
+        
+    st.markdown("### 🏆 Recruiter Executive Summary")
+    
+    # Custom styled HTML grid for Task 1
+    st.markdown(
+        f"""
+        <div class="exec-card-grid">
+            <div class="exec-card">
+                <div class="exec-card-title">Overall Rating</div>
+                <div class="exec-card-value" style="color: #F59E0B;">{rating}</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-card-title">ATS Readiness</div>
+                <div class="exec-card-value" style="color: #10B981;">{ats_ready}</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-card-title">JD Alignment</div>
+                <div class="exec-card-value" style="color: #3B82F6;">{jd_align}</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-card-title">Technical Skill Coverage</div>
+                <div class="exec-card-value" style="color: #8B5CF6;">{skill_cov}</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-card-title">Recommendation</div>
+                <div class="exec-card-value" style="color: #EF4444;">{rec_recommend}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 3. METRICS ROW (Renamed for TASK 2)
     col1, col2, col3, col4 = st.columns(4)
     
-    # ATS Card
+    # ATS Card (Renamed to ATS Resume Quality)
     from services.ats_scorer import get_ats_interpretation
     ats_interp = get_ats_interpretation(ats_score).split(" - ")[0]
     with col1:
         render_metric_card(
-            title="ATS Compatibility",
+            title="ATS Resume Quality",
             value=f"{ats_score}/100",
             subtitle=f"🎯 {ats_interp}",
             icon="🎯",
             color_class="card-ats"
         )
         
-    # JD Match Card
+    # JD Match Card (Renamed to Semantic JD Match)
     if jd_text and jd_text.strip():
         from services.jd_matcher import get_jd_match_interpretation
         jd_interp = get_jd_match_interpretation(jd_match_score).split(" - ")[0]
@@ -721,14 +834,14 @@ def render_recruiter_dashboard(
         
     with col2:
         render_metric_card(
-            title="JD Alignment",
+            title="Semantic JD Match",
             value=jd_value,
             subtitle=jd_sub,
             icon="💼",
             color_class="card-jd"
         )
         
-    # Skills Match Percentage (Using Semantic Matching!)
+    # Skills Match Percentage (Renamed to Technical Skill Coverage)
     if jd_text and jd_text.strip():
         skills_value = f"{semantic_gaps['match_percentage']}%"
         skills_sub = f"🛠️ {len(semantic_gaps['matched_skills'])} matched requirements"
@@ -749,7 +862,7 @@ def render_recruiter_dashboard(
         
     with col3:
         render_metric_card(
-            title="Skills Match",
+            title="Technical Skill Coverage",
             value=skills_value,
             subtitle=skills_sub,
             icon="🛠️",
@@ -850,12 +963,26 @@ def render_recruiter_dashboard(
                 badge_type="match"
             )
             
-            # Skills Badging (Missing / Gaps - extracted from semantic missing skills)
-            render_skills_badges(
-                title="Missing Tech Requirements (Skill Gaps)",
-                skills=semantic_gaps["missing_skills"],
-                badge_type="gap"
-            )
+            # Skills Badging (Missing / Gaps - Top 10 with Expander for TASK 3)
+            missing_skills = semantic_gaps.get("missing_skills", [])
+            if len(missing_skills) > 10:
+                render_skills_badges(
+                    title="Top 10 Missing Tech Requirements (Skill Gaps)",
+                    skills=missing_skills[:10],
+                    badge_type="gap"
+                )
+                with st.expander("🔍 View All Skill Gaps"):
+                    render_skills_badges(
+                        title="All Missing Tech Requirements",
+                        skills=missing_skills,
+                        badge_type="gap"
+                    )
+            else:
+                render_skills_badges(
+                    title="Missing Tech Requirements (Skill Gaps)",
+                    skills=missing_skills,
+                    badge_type="gap"
+                )
             
             # Upskilling Recommendations
             if semantic_gaps.get("recommended_skills"):
@@ -1027,3 +1154,186 @@ def render_bulk_leaderboard(ranked_candidates: List[Any]):
 </div>"""
 
     st.markdown(table_html, unsafe_allow_html=True)
+
+
+def generate_pdf_report(
+    parsed_data: Dict[str, Any],
+    ats_score: int,
+    jd_match_score: int,
+    match_details: Dict[str, Any],
+    skill_gaps: List[str],
+    suggestions: str
+) -> bytes:
+    """
+    Generates a professional recruiter report in PDF format using reportlab.
+    """
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from io import BytesIO
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    
+    # Custom Styles for premium look
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=24,
+        leading=28,
+        textColor=colors.HexColor('#0052e0'),
+        spaceAfter=15
+    )
+    
+    section_style = ParagraphStyle(
+        'DocSection',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        leading=18,
+        textColor=colors.HexColor('#1F2937'),
+        spaceBefore=12,
+        spaceAfter=8
+    )
+    
+    body_style = ParagraphStyle(
+        'DocBody',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#374151')
+    )
+    
+    # Header
+    name = parsed_data.get("name", "Candidate Profile")
+    story.append(Paragraph(f"Resume.AI Recruiter Report: {name}", title_style))
+    story.append(Paragraph(f"Email: {parsed_data.get('email', 'N/A')} | Phone: {parsed_data.get('phone', 'N/A')}", body_style))
+    story.append(Spacer(1, 15))
+    
+    # Summary
+    story.append(Paragraph("Candidate Summary", section_style))
+    story.append(Paragraph(parsed_data.get("summary", "No summary available."), body_style))
+    story.append(Spacer(1, 10))
+    
+    # Metrics Table
+    data = [
+        ["Metric", "Value", "Status"],
+        ["ATS Resume Quality", f"{ats_score}/100", "ATS Ready" if ats_score >= 80 else "Needs Improvement"],
+        ["Semantic JD Match", f"{jd_match_score}%" if jd_match_score else "N/A", "Aligned" if jd_match_score >= 70 else "Review Gaps"],
+    ]
+    t = Table(data, colWidths=[150, 100, 150])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0052e0')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('BOTTOMPADDING', (0,0), (-1,0), 8),
+        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#F9FAFB')),
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#E5E7EB')),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 15))
+    
+    # Skills
+    story.append(Paragraph("Technical Skills", section_style))
+    skills = parsed_data.get("skills", [])
+    flat_skills = []
+    if isinstance(skills, list):
+        flat_skills = skills
+    elif isinstance(skills, dict):
+        for val in skills.values():
+            if isinstance(val, list):
+                flat_skills.extend(val)
+    story.append(Paragraph(f"<b>Identified Skills</b>: {', '.join(flat_skills) if flat_skills else 'None'}", body_style))
+    if skill_gaps:
+        story.append(Spacer(1, 5))
+        story.append(Paragraph(f"<b>Missing Core Requirements</b>: {', '.join(skill_gaps)}", body_style))
+    story.append(Spacer(1, 10))
+    
+    # Projects
+    story.append(Paragraph("Key Projects", section_style))
+    projects = parsed_data.get("projects", [])
+    if projects and isinstance(projects, list):
+        for proj in projects:
+            p_name = proj.get("name", "Project")
+            p_tech = ", ".join(proj.get("tech_stack", []))
+            p_sum = proj.get("summary", "")
+            story.append(Paragraph(f"• <b>{p_name}</b> (Tech: {p_tech}) - {p_sum}", body_style))
+    else:
+        story.append(Paragraph("No major projects listed.", body_style))
+    story.append(Spacer(1, 10))
+    
+    # Recommendations
+    story.append(Paragraph("AI Recommendations", section_style))
+    clean_sug = suggestions.replace("- Suggestion", "\n• Suggestion")
+    story.append(Paragraph(clean_sug or "No suggestions available.", body_style))
+    
+    doc.build(story)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes
+
+
+def render_premium_suggestions(suggestions_text: str):
+    """
+    Parses and displays raw AI suggestions as beautifully styled premium cards.
+    """
+    import re
+    if not suggestions_text:
+        st.warning("No suggestions available.")
+        return
+        
+    lines = [line.strip() for line in suggestions_text.split("\n") if line.strip()]
+    suggestions = []
+    
+    current_sug = ""
+    for line in lines:
+        if re.match(r'^(?:-|\*|•|\d+\.)\s*Suggestion\s*\d+:', line, re.IGNORECASE) or re.match(r'^(?:-|\*|•|\d+\.)\s*\[?Suggestion\s*\d+\]?:', line, re.IGNORECASE):
+            if current_sug:
+                suggestions.append(current_sug)
+            clean_line = re.sub(r'^(?:-|\*|•|\d+\.)\s*Suggestion\s*\d+:\s*', '', line, flags=re.IGNORECASE)
+            clean_line = re.sub(r'^(?:-|\*|•|\d+\.)\s*\[?Suggestion\s*\d+\]?:\s*', '', clean_line, flags=re.IGNORECASE)
+            current_sug = clean_line
+        elif line.startswith(("-", "*", "•", "1.", "2.", "3.")) and not current_sug:
+            current_sug = line.strip("- *• 1234567890. ")
+        elif current_sug:
+            current_sug += " " + line
+            
+    if current_sug:
+        suggestions.append(current_sug)
+        
+    if not suggestions:
+        bullets = [l.strip("- *• 1234567890. ") for l in lines if l.strip().startswith(("-", "*", "•", "1.", "2.", "3."))]
+        if bullets:
+            suggestions = bullets
+        else:
+            suggestions = [suggestions_text]
+            
+    st.markdown("### 💡 AI Strategic Resume Recommendations")
+    st.caption("Factual and actionable steps to elevate ATS score and candidate JD alignment:")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    for idx, sug in enumerate(suggestions, 1):
+        priority = "🔴 High Priority" if idx == 1 else ("🟡 Medium Priority" if idx == 2 else "🟢 Low Priority")
+        
+        st.markdown(
+            f"""
+            <div style="background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.45)); border: 1px solid rgba(49, 51, 63, 0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 0.8rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; color: gray;">Suggestion #{idx}</span>
+                    <span style="font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; background-color: rgba(128,128,128,0.1);">{priority}</span>
+                </div>
+                <div style="margin-bottom: 8px;"><strong>⚠️ Problem Area:</strong> Structure or keyword density mismatch against targeted job roles.</div>
+                <div style="margin-bottom: 8px;"><strong>💡 Actionable Recommendation:</strong> {sug}</div>
+                <div><strong>🚀 Expected Impact:</strong> Maximizes ATS parsing compatibility and structural validation index metrics.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
