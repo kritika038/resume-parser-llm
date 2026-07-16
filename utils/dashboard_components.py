@@ -738,27 +738,33 @@ def render_recruiter_dashboard(
     effective_jd_match = jd_match_score if (jd_text and jd_text.strip()) else 70
     overall_score = (ats_score * 0.3) + (effective_jd_match * 0.4) + (skills_percent * 0.3)
     
-    # Stars & Assessment (Constructive Verdicts)
-    if overall_score >= 85:
-        rating = "★★★★★ Excellent Resume"
-    elif overall_score >= 70:
-        rating = "★★★★☆ Strong Profile"
-    elif overall_score >= 50:
-        rating = "★★★☆☆ Good AI Foundation"
+    has_jd = (jd_text and jd_text.strip())
+    
+    # Stars & Assessment (Constructive Verdicts & overrides for high ATS / low JD fit)
+    if has_jd and ats_score > 95 and effective_jd_match < 50:
+        rating = "★★☆☆☆ Opportunity for Improvement"
+        rec_recommend = "Requires Additional Skill Alignment"
     else:
-        rating = "★★☆☆☆ Needs Tech Polish"
+        if overall_score >= 85:
+            rating = "★★★★★ Excellent Resume"
+        elif overall_score >= 70:
+            rating = "★★★★☆ Strong Profile"
+        elif overall_score >= 50:
+            rating = "★★★☆☆ Good AI Foundation"
+        else:
+            rating = "★★☆☆☆ Needs Tech Polish"
         
-    # ATS Readiness
+    # ATS Readiness (Resume Formatting)
     ats_ready = "ATS Excellent" if ats_score >= 80 else ("ATS Proficient" if ats_score >= 60 else "Requires Formatting Polish")
     
-    # JD Alignment
-    if jd_text and jd_text.strip():
+    # JD Alignment (Semantic JD Match)
+    if has_jd:
         jd_align = "Highly Aligned" if effective_jd_match >= 80 else ("Satisfactory Alignment" if effective_jd_match >= 60 else "Low Alignment")
     else:
         jd_align = "N/A - No JD Provided"
         
     # Technical Skill Coverage
-    if jd_text and jd_text.strip():
+    if has_jd:
         missing_skills = semantic_gaps.get("missing_skills", [])
         if skills_percent >= 80:
             skill_cov = "Excellent Coverage"
@@ -772,38 +778,43 @@ def render_recruiter_dashboard(
         skill_cov = "Extracted Verified Skills"
         
     # Recruiter Recommendation (Constructive Guidance)
-    if overall_score >= 85:
-        rec_recommend = "Strongly Recommended"
-    elif overall_score >= 70:
-        rec_recommend = "Recommended for Interview"
-    elif overall_score >= 50:
-        rec_recommend = "Recommended with Upskilling"
-    else:
-        rec_recommend = "Suggest Domain Foundation"
+    if not (has_jd and ats_score > 95 and effective_jd_match < 50):
+        if overall_score >= 85:
+            rec_recommend = "Strongly Recommended"
+        elif overall_score >= 70:
+            rec_recommend = "Recommended for Interview"
+        elif overall_score >= 50:
+            rec_recommend = "Recommended with Upskilling"
+        else:
+            rec_recommend = "Suggest Domain Foundation"
         
     st.markdown("### 🏆 Recruiter Executive Summary")
     
+    # Render warning banner if high ATS formatting but low JD match relevance is detected
+    if has_jd and ats_score > 95 and effective_jd_match < 50:
+        st.warning("⚠️ **Notice:** Excellent ATS formatting, but low relevance to this job description.")
+    
     # Tooltip definitions explaining metrics for Task 3 & 4
-    rating_help = "Overall Rating represents the weighted combination of formatting quality (30%), semantic job match (40%), and keyword skill coverage (30%)."
-    ats_help = "ATS Readiness indicates formatting compliance and structural parsing compatibility. It measures layout factors rather than direct skill matches."
-    jd_help = "JD Alignment measures the semantic and conceptual similarity between the candidate experience and the target JD text, using Cosine similarity embeddings."
+    rating_help = "Overall Resume Quality represents the weighted combination of formatting quality (30%), semantic job match (40%), and keyword skill coverage (30%)."
+    ats_help = "Resume Formatting indicates formatting compliance and structural parsing compatibility. It measures layout factors rather than direct skill matches."
+    jd_help = "Semantic JD Match measures the semantic and conceptual similarity between the candidate experience and the target JD text, using Cosine similarity embeddings."
     skill_help = "Technical Skill Coverage calculates the percentage of exact and synonym matched skill keywords extracted from the JD against the resume text."
-    rec_help = "Recommendation is the derived action pathway based on overall alignment, providing a constructive recruiter guide for candidates."
+    rec_help = "Recruiter Recommendation is the derived action pathway based on overall alignment, providing a constructive recruiter guide for candidates."
 
     # Custom styled HTML grid for Task 1, 3, & 4
     st.markdown(
         f"""
         <div class="exec-card-grid">
             <div class="exec-card" title="{rating_help}" style="cursor: help;">
-                <div class="exec-card-title">Overall Rating ℹ️</div>
+                <div class="exec-card-title">Overall Resume Quality ℹ️</div>
                 <div class="exec-card-value" style="color: #F59E0B;">{rating}</div>
             </div>
             <div class="exec-card" title="{ats_help}" style="cursor: help;">
-                <div class="exec-card-title">ATS Readiness ℹ️</div>
+                <div class="exec-card-title">Resume Formatting ℹ️</div>
                 <div class="exec-card-value" style="color: #10B981;">{ats_ready}</div>
             </div>
             <div class="exec-card" title="{jd_help}" style="cursor: help;">
-                <div class="exec-card-title">JD Alignment ℹ️</div>
+                <div class="exec-card-title">Semantic JD Match ℹ️</div>
                 <div class="exec-card-value" style="color: #3B82F6;">{jd_align}</div>
             </div>
             <div class="exec-card" title="{skill_help}" style="cursor: help;">
@@ -811,7 +822,7 @@ def render_recruiter_dashboard(
                 <div class="exec-card-value" style="color: #8B5CF6;">{skill_cov}</div>
             </div>
             <div class="exec-card" title="{rec_help}" style="cursor: help;">
-                <div class="exec-card-title">Recommendation ℹ️</div>
+                <div class="exec-card-title">Recruiter Recommendation ℹ️</div>
                 <div class="exec-card-value" style="color: #EF4444;">{rec_recommend}</div>
             </div>
         </div>
