@@ -38,15 +38,32 @@ st.set_page_config(
 import os
 import requests
 
+# ========== DETECT INFERENCE ENVIRONMENT ==========
+def detect_env() -> str:
+    if "SPACE_ID" in os.environ or get_config_value("SPACE_ID") is not None:
+        return "Production (Hugging Face Spaces)"
+    elif "RENDER" in os.environ or get_config_value("RENDER") is not None:
+        return "Production (Render)"
+    elif "RAILWAY_STATIC_URL" in os.environ or get_config_value("RAILWAY_STATIC_URL") is not None:
+        return "Production (Railway)"
+    elif os.environ.get("STREAMLIT_SERVER_PORT") or os.environ.get("HOSTNAME") == "streamlit":
+        return "Production (Streamlit Cloud)"
+    else:
+        # Check if running inside Streamlit Cloud container by checking common env indicators
+        is_sharing = os.environ.get("STREAMLIT_SHARING_ORGANIZATION") or os.environ.get("STREAMLIT_SHARING_USER_REPOS")
+        if is_sharing:
+            return "Production (Streamlit Cloud)"
+        return "Local Development"
+
 # ========== PROVIDER VALIDATION & HEALTH CHECKS ==========
 is_hf_space = "SPACE_ID" in os.environ or get_config_value("SPACE_ID") is not None
-is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ or get_config_value("RENDER") is not None or get_config_value("PORT") is not None
+is_prod = "RENDER" in os.environ or "RAILWAY_STATIC_URL" in os.environ or "PORT" in os.environ or get_config_value("RENDER") is not None or get_config_value("PORT") is not None or detect_env().startswith("Production")
 default_provider = "groq" if (is_hf_space or is_prod) else "ollama"
 provider = get_config_value("LLM_PROVIDER", default_provider).strip().lower()
 
 # Render System Diagnostics in the sidebar at the top of configuration
 st.sidebar.markdown("### 🔌 System Diagnostics")
-st.sidebar.write(f"**Environment**: `{'Hugging Face Space' if is_hf_space else ('Production Cloud' if is_prod else 'Local Machine')}`")
+st.sidebar.write(f"**Environment**: `{detect_env()}`")
 st.sidebar.write(f"**Active Provider**: `{provider.upper()}`")
 st.sidebar.write(f"**Groq API Key**: `{'Configured' if get_config_value('GROQ_API_KEY') else 'Missing'}`")
 st.sidebar.divider()
@@ -191,8 +208,23 @@ logo_svg = """
 </div>
 """
 
-st.markdown(logo_svg, unsafe_allow_html=True)
-st.caption("AI-Powered ATS Matching, Semantic Resume Parsing & Candidate Intelligence")
+# Header Layout with GitHub Repository & Version Info
+col_header_left, col_header_right = st.columns([3, 1])
+with col_header_left:
+    st.markdown(logo_svg, unsafe_allow_html=True)
+with col_header_right:
+    st.markdown(
+        """
+        <div style="text-align: right; margin-top: 15px;">
+            <a href="https://github.com/kritika038/resume-parser-llm" target="_blank" style="text-decoration: none; color: inherit;">
+                <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Repo" />
+            </a>
+            <div style="font-size: 0.82rem; font-weight: 600; opacity: 0.7; margin-top: 5px;">Version 1.0.0</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+st.caption("Enterprise-Grade AI-Powered ATS Matching, Semantic Resume Parsing & Candidate Intelligence")
 
 # ========== MODE SELECTION ==========
 mode = st.radio(
@@ -206,14 +238,16 @@ mode = st.radio(
 with st.sidebar:
     st.header("ℹ️ About")
     st.markdown("""
-    This platform uses **Mistral LLM** (via Ollama) to:
-    - Extract structured resume data
-    - Calculate ATS compatibility
-    - Match skills to job requirements
-    - Generate AI recommendations
-    - Compare multiple candidates
+    Supports both:
+    - **Local inference**: Ollama (Mistral/Llama) for data privacy.
+    - **Cloud inference**: Groq (Llama-3) for high-speed analysis.
+
+    *The deployed demo is currently powered by Groq.*
     
-    **Privacy First:** All processing is local. No data leaves your machine.
+    **Core Features**:
+    - **ATS Score**: Compatibility assessment.
+    - **JD Alignment**: Semantic Cosine Matching.
+    - **Skill Gaps**: Actionable recommendations.
     """)
     
     st.divider()
@@ -238,7 +272,11 @@ if mode == "Single Resume":
         resume_text = ""
         
         if input_method == "Upload PDF":
-            uploaded_file = st.file_uploader("Select PDF resume", type=["pdf"])
+            uploaded_file = st.file_uploader(
+                "📄 Upload Resume (PDF)",
+                type=["pdf"],
+                help="Supported: PDF | Max Size: 200 MB"
+            )
         else:
             resume_text = st.text_area(
                 "Paste your resume text here",
@@ -249,6 +287,21 @@ if mode == "Single Resume":
     
     with col2:
         st.subheader("Job Description (Optional)")
+        
+        # Load Sample JD button logic for single resume mode
+        if st.button("📋 Load Sample JD", key="load_sample_jd_single_btn", use_container_width=True):
+            st.session_state["single_jd_text"] = (
+                "Role: AI/ML Engineer\n"
+                "Requirements:\n"
+                "- Strong experience in Python, PyTorch/TensorFlow, and Scikit-Learn.\n"
+                "- Hands-on experience building and deploying Large Language Models (LLMs) and RAG systems.\n"
+                "- Proficiency with vector databases (e.g. Qdrant, ChromaDB) and semantic search architectures.\n"
+                "- Experience building REST APIs using FastAPI or Flask.\n"
+                "- Containerization using Docker and orchestration tools (Kubernetes, Docker Compose).\n"
+                "- Familiarity with MLOps pipelines, model profiling, and deployment on AWS/GCP."
+            )
+            st.rerun()
+
         jd_text = st.text_area(
             "Paste job description for skill matching",
             height=250,
@@ -463,6 +516,21 @@ else:
     
     with col1:
         st.subheader("📋 Job Description (Required)")
+        
+        # Load Sample JD button logic for bulk mode
+        if st.button("📋 Load Sample JD", key="load_sample_jd_bulk_btn", use_container_width=True):
+            st.session_state["jd_bulk_text"] = (
+                "Role: AI/ML Engineer\n"
+                "Requirements:\n"
+                "- Strong experience in Python, PyTorch/TensorFlow, and Scikit-Learn.\n"
+                "- Hands-on experience building and deploying Large Language Models (LLMs) and RAG systems.\n"
+                "- Proficiency with vector databases (e.g. Qdrant, ChromaDB) and semantic search architectures.\n"
+                "- Experience building REST APIs using FastAPI or Flask.\n"
+                "- Containerization using Docker and orchestration tools (Kubernetes, Docker Compose).\n"
+                "- Familiarity with MLOps pipelines, model profiling, and deployment on AWS/GCP."
+            )
+            st.rerun()
+
         jd_bulk = st.text_area(
             "Paste the job description",
             height=200,
@@ -666,31 +734,11 @@ else:
 
 # ========== FOOTER ==========
 st.divider()
-with st.expander("ℹ️ About This Platform"):
-    st.markdown("""
-    ### 🚀 AI Resume Intelligence Platform
-    
-    **Modes:**
-    - **Single Resume:** Detailed analysis with ATS, JD matching, and suggestions
-    - **Bulk Comparison:** Compare multiple candidates, rank by multiple metrics
-    
-    **Scoring Metrics:**
-    - **ATS Score (0-100):** Applicant Tracking System compatibility
-    - **Keyword Match (0-100%):** Exact skill overlap with JD
-    - **Semantic Similarity (0-100%):** Conceptual alignment with JD
-    - **Overall Score:** Weighted combination for final ranking
-    
-    **Technology:**
-    - Mistral LLM (via Ollama) for resume parsing
-    - SentenceTransformers for semantic analysis
-    - Streamlit for interactive UI
-    - All processing is local - no cloud uploads
-    
-    **Features:**
-    - 🧠 LLM-powered extraction
-    - 🔐 100% local processing
-    - 📊 Multi-dimensional scoring
-    - 🎯 Semantic job matching
-    - 📋 Bulk comparison
-    - ⬇️ JSON/CSV export
-    """)
+st.markdown(
+    """
+    <div style="text-align: center; font-size: 0.82rem; opacity: 0.7; padding: 15px 0;">
+        Built with Python | Streamlit | SentenceTransformers | Ollama | Groq
+    </div>
+    """,
+    unsafe_allow_html=True
+)
