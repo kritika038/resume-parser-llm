@@ -1388,7 +1388,7 @@ def format_recommendation_as_bullets(recommendation_raw: str) -> str:
             return f"• {text_capitalized}"
         return ""
         
-    return "\n\n".join(bullets)
+    return "\n".join(bullets)
 
 
 def extract_problem_from_suggestion(sug: str) -> str:
@@ -1397,12 +1397,12 @@ def extract_problem_from_suggestion(sug: str) -> str:
     """
     sug_lower = sug.lower()
     if "python" in sug_lower or "pytorch" in sug_lower or "tensorflow" in sug_lower or "skill" in sug_lower or "skills" in sug_lower or "language" in sug_lower or "tool" in sug_lower or "stack" in sug_lower:
-        return "Technical skill gaps identified compared to target job description requirements."
+        return "• Technical skill gaps identified compared to target job description requirements."
     if "project" in sug_lower or "experience" in sug_lower or "internship" in sug_lower or "work" in sug_lower or "job" in sug_lower:
-        return "Key projects or professional work experience portfolio lacks detail or impact metrics."
+        return "• Key projects or professional work experience portfolio lacks detail or impact metrics."
     if "ats" in sug_lower or "format" in sug_lower or "section" in sug_lower or "structure" in sug_lower or "read" in sug_lower or "layout" in sug_lower:
-        return "Resume formatting elements, layout structure, or contact detail placement requires optimization."
-    return "Keyword alignment or detail completeness gap identified in candidate profile."
+        return "• Resume formatting elements, layout structure, or contact detail placement requires optimization."
+    return "• Keyword alignment or detail completeness gap identified in candidate profile."
 
 
 def extract_impact_from_suggestion(sug: str) -> str:
@@ -1411,8 +1411,8 @@ def extract_impact_from_suggestion(sug: str) -> str:
     """
     sug_lower = sug.lower()
     if "format" in sug_lower or "ats" in sug_lower or "structure" in sug_lower or "layout" in sug_lower:
-        return "Improves layout compliance scoring and ensures zero parsing errors in standard ATS engines."
-    return "Improves semantic job description alignment matching rating and hiring manager relevance."
+        return "• Improves layout compliance scoring\n• Ensures zero parsing errors in standard ATS engines."
+    return "• Improves semantic job description alignment matching rating\n• Increases recruiter and hiring manager confidence."
 
 
 def render_premium_suggestions(suggestions_text: str):
@@ -1474,7 +1474,7 @@ def render_premium_suggestions(suggestions_text: str):
     st.markdown("<br>", unsafe_allow_html=True)
     
     for idx, sug in enumerate(suggestions, 1):
-        priority_label = "🔴 HIGH PRIORITY" if idx == 1 else ("🟠 MEDIUM PRIORITY" if idx == 2 else "🟢 LOW PRIORITY")
+        priority_label = "HIGH" if idx == 1 else ("MEDIUM" if idx == 2 else "LOW")
         priority_color = "#EF4444" if idx == 1 else ("#F97316" if idx == 2 else "#10B981")
         
         problem_text = extract_problem_from_suggestion(sug)
@@ -1487,15 +1487,13 @@ def render_premium_suggestions(suggestions_text: str):
         st.markdown(
             f"""
             <div style="background-color: var(--secondary-background-color, rgba(240, 242, 246, 0.45)); border: 1px solid rgba(49, 51, 63, 0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
-                <div style="margin-bottom: 12px;">
-                    <span style="font-size: 0.8rem; font-weight: 800; color: {priority_color}; border: 1px solid {priority_color}; padding: 3px 8px; border-radius: 6px; background-color: rgba(128,128,128,0.05);">{priority_label}</span>
-                </div>
-                <div style="margin-bottom: 8px;"><strong>Problem</strong></div>
-                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95;">{problem_text}</div>
-                <div style="margin-bottom: 8px;"><strong>Recommendation</strong></div>
+                <div style="margin-bottom: 12px; font-weight: 800; color: {priority_color}; font-size: 0.95rem;">Priority: {priority_label}</div>
+                <div style="margin-bottom: 4px; font-weight: 700; font-size: 0.95rem;">Problem</div>
+                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95; white-space: pre-wrap;">{problem_text}</div>
+                <div style="margin-bottom: 4px; font-weight: 700; font-size: 0.95rem;">Recommendation</div>
                 <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95; white-space: pre-wrap;">{recommendation_text}</div>
-                <div style="margin-bottom: 8px;"><strong>Expected Impact</strong></div>
-                <div style="font-size: 0.92rem; opacity: 0.95;">{impact_text}</div>
+                <div style="margin-bottom: 4px; font-weight: 700; font-size: 0.95rem;">Expected Impact</div>
+                <div style="font-size: 0.92rem; opacity: 0.95; white-space: pre-wrap;">{impact_text}</div>
             </div>
             """,
             unsafe_allow_html=True
