@@ -1296,13 +1296,6 @@ def generate_pdf_report(
     
     # Recommendations
     story.append(Paragraph("AI Recommendations", section_style))
-    clean_sug = suggestions.replace("- Suggestion", "\n• Suggestion")
-    story.append(Paragraph(clean_sug or "No suggestions available.", body_style))
-    
-    doc.build(story)
-    pdf_bytes = buffer.getvalue()
-    buffer.close()
-    return pdf_bytes
 
 
 def clean_markdown_text(text: str) -> str:
@@ -1320,6 +1313,78 @@ def clean_markdown_text(text: str) -> str:
     return text.strip()
 
 
+def should_ignore_sentence(sentence: str) -> bool:
+    """
+    Identifies if a sentence is conversational LLM intro/outro text.
+    """
+    sentence_lower = sentence.lower().strip()
+    ignore_phrases = [
+        "based on the", "here are", "the following", "analyze the", 
+        "generate 3", "resume improvement", "expert career coach", 
+        "advisor", "focus on:", "actionable and specific", 
+        "provided resume", "career coach and", "career coach",
+        "improvement suggestions", "improvements:", "suggestions for",
+        "improvement:", "specific improvement"
+    ]
+    for phrase in ignore_phrases:
+        if phrase in sentence_lower:
+            return True
+    return False
+
+
+def format_recommendation_as_bullets(recommendation_raw: str) -> str:
+    """
+    Converts suggestion paragraphs into clean recruiter-friendly bullet points.
+    """
+    import re
+    text = clean_markdown_text(recommendation_raw)
+    
+    # Remove common conversational prefixes
+    text = re.sub(r'^(?:Please|Try to|You should|Consider|I recommend to|Recommend to|I suggest to|Suggest to)\s+', '', text, flags=re.IGNORECASE)
+    
+    # Split by periods, semicolons, or bullet symbols
+    parts = [p.strip() for p in re.split(r'[.;•\-]', text) if p.strip()]
+    
+    bullets = []
+    for p in parts:
+        p_clean = p.strip("•- *")
+        if len(p_clean) > 5 and not should_ignore_sentence(p_clean):
+            p_capitalized = p_clean[0].upper() + p_clean[1:]
+            bullets.append(f"• {p_capitalized}")
+            
+    if not bullets:
+        if not should_ignore_sentence(text):
+            text_capitalized = text[0].upper() + text[1:] if text else ""
+            return f"• {text_capitalized}"
+        return ""
+        
+    return "\n\n".join(bullets)
+
+
+def extract_problem_from_suggestion(sug: str) -> str:
+    """
+    Derives a professional recruiter-friendly problem statement from the suggestion.
+    """
+    sug_lower = sug.lower()
+    if "python" in sug_lower or "pytorch" in sug_lower or "tensorflow" in sug_lower or "skill" in sug_lower or "skills" in sug_lower or "language" in sug_lower or "tool" in sug_lower or "stack" in sug_lower:
+        return "Technical skill gaps identified compared to target job description requirements."
+    if "project" in sug_lower or "experience" in sug_lower or "internship" in sug_lower or "work" in sug_lower or "job" in sug_lower:
+        return "Key projects or professional work experience portfolio lacks detail or impact metrics."
+    if "ats" in sug_lower or "format" in sug_lower or "section" in sug_lower or "structure" in sug_lower or "read" in sug_lower or "layout" in sug_lower:
+        return "Resume formatting elements, layout structure, or contact detail placement requires optimization."
+    return "Keyword alignment or detail completeness gap identified in candidate profile."
+
+
+def extract_impact_from_suggestion(sug: str) -> str:
+    """
+    Derives a concise, one-sentence expected impact statement.
+    """
+    sug_lower = sug.lower()
+    if "format" in sug_lower or "ats" in sug_lower or "structure" in sug_lower or "layout" in sug_lower:
+        return "Improves layout compliance scoring and ensures zero parsing errors in standard ATS engines."
+    return "Improves semantic job description alignment matching rating and hiring manager relevance."
+
+
 def render_premium_suggestions(suggestions_text: str):
     """
     Parses and displays raw AI suggestions as beautifully styled premium cards.
@@ -1327,12 +1392,12 @@ def render_premium_suggestions(suggestions_text: str):
     """
     import re
     if not suggestions_text:
-        st.warning("No suggestions available.")
+        st.info("No additional actionable recommendations generated.")
         return
         
     cleaned_full_text = clean_markdown_text(suggestions_text)
     
-    # Split by Suggestion header or bullet items
+    # Split into separate suggestions
     lines = [line.strip() for line in cleaned_full_text.split("\n") if line.strip()]
     suggestions = []
     
@@ -1340,27 +1405,39 @@ def render_premium_suggestions(suggestions_text: str):
     for line in lines:
         if re.match(r'^(?:-|\*|•|\d+\.)\s*Suggestion\s*\d+:', line, re.IGNORECASE) or re.match(r'^(?:-|\*|•|\d+\.)\s*\[?Suggestion\s*\d+\]?:', line, re.IGNORECASE):
             if current_sug:
-                suggestions.append(current_sug)
+                current_sug = clean_markdown_text(current_sug)
+                if current_sug and not should_ignore_sentence(current_sug):
+                    suggestions.append(current_sug)
             clean_line = re.sub(r'^(?:-|\*|•|\d+\.)\s*Suggestion\s*\d+:\s*', '', line, flags=re.IGNORECASE)
             clean_line = re.sub(r'^(?:-|\*|•|\d+\.)\s*\[?Suggestion\s*\d+\]?:\s*', '', clean_line, flags=re.IGNORECASE)
             current_sug = clean_line
         elif line.startswith(("-", "*", "•", "1.", "2.", "3.")) and not current_sug:
-            current_sug = line.strip("- *• 1234567890. ")
+            line_clean = line.strip("- *• 1234567890. ")
+            if not should_ignore_sentence(line_clean):
+                current_sug = line_clean
         elif current_sug:
             current_sug += " " + line
             
     if current_sug:
-        suggestions.append(current_sug)
-        
-    if not suggestions:
-        bullets = [l.strip("- *• 1234567890. ") for l in lines if l.strip().startswith(("-", "*", "•", "1.", "2.", "3."))]
-        if bullets:
-            suggestions = bullets
-        else:
-            suggestions = [s.strip() for s in cleaned_full_text.split("\n\n") if s.strip()]
+        current_sug = clean_markdown_text(current_sug)
+        if current_sug and not should_ignore_sentence(current_sug):
+            suggestions.append(current_sug)
             
+    # Fallback to lines if no prefix is matched
+    if not suggestions:
+        for line in lines:
+            line_clean = line.strip("- *• 1234567890. ")
+            if len(line_clean) > 15 and not should_ignore_sentence(line_clean):
+                suggestions.append(line_clean)
+                
+    suggestions = [s for s in suggestions if s and not should_ignore_sentence(s)]
+    
     # Limit to maximum 3 recommendations
     suggestions = suggestions[:3]
+    
+    if not suggestions:
+        st.info("No additional actionable recommendations generated.")
+        return
             
     st.markdown("### 💡 AI Strategic Resume Recommendations")
     st.caption("Actionable recommendations to enhance your formatting structure and job description match:")
@@ -1370,32 +1447,12 @@ def render_premium_suggestions(suggestions_text: str):
         priority_label = "🔴 HIGH PRIORITY" if idx == 1 else ("🟠 MEDIUM PRIORITY" if idx == 2 else "🟢 LOW PRIORITY")
         priority_color = "#EF4444" if idx == 1 else ("#F97316" if idx == 2 else "#10B981")
         
-        # We cleanly split the suggestion text into sub-elements
-        problem_text = "Identified area for structural refinement in candidate CV details."
-        recommendation_text = sug
-        impact_text = "Increases ATS structural compatibility scoring matrix index and recruiter visibility."
+        problem_text = extract_problem_from_suggestion(sug)
+        recommendation_text = format_recommendation_as_bullets(sug)
+        impact_text = extract_impact_from_suggestion(sug)
         
-        if "problem" in sug.lower():
-            p_match = re.search(r'problem:?\s*(.*?)(?=recommendation|impact|$)', sug, re.IGNORECASE | re.DOTALL)
-            if p_match:
-                problem_text = p_match.group(1).strip()
-        if "recommendation" in sug.lower():
-            r_match = re.search(r'recommendation:?\s*(.*?)(?=impact|problem|$)', sug, re.IGNORECASE | re.DOTALL)
-            if r_match:
-                recommendation_text = r_match.group(1).strip()
-        if "impact" in sug.lower():
-            i_match = re.search(r'impact:?\s*(.*?)(?=problem|recommendation|$)', sug, re.IGNORECASE | re.DOTALL)
-            if i_match:
-                impact_text = i_match.group(1).strip()
-                
-        # Clean any remaining markdown in sub-elements
-        problem_text = clean_markdown_text(problem_text)
-        recommendation_text = clean_markdown_text(recommendation_text)
-        impact_text = clean_markdown_text(impact_text)
-        
-        # Ensure they fit standard height/line bounds (concise)
-        if len(recommendation_text) > 250:
-            recommendation_text = recommendation_text[:247] + "..."
+        if not recommendation_text.strip():
+            continue
             
         st.markdown(
             f"""
@@ -1406,7 +1463,7 @@ def render_premium_suggestions(suggestions_text: str):
                 <div style="margin-bottom: 8px;"><strong>Problem</strong></div>
                 <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95;">{problem_text}</div>
                 <div style="margin-bottom: 8px;"><strong>Recommendation</strong></div>
-                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95;">{recommendation_text}</div>
+                <div style="margin-bottom: 12px; font-size: 0.92rem; opacity: 0.95; white-space: pre-wrap;">{recommendation_text}</div>
                 <div style="margin-bottom: 8px;"><strong>Expected Impact</strong></div>
                 <div style="font-size: 0.92rem; opacity: 0.95;">{impact_text}</div>
             </div>
