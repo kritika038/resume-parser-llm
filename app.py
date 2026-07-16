@@ -616,6 +616,8 @@ if mode == "Single Resume":
             st.warning(f"Error Details: {str(e)}")
             st.info("Please verify your inputs, check platform environment logs, and try again.")
             st.stop()
+    else:
+        st.info("💡 Upload a resume and optionally a job description to generate recruiter-grade insights.")
 
 # ========== BULK CANDIDATE COMPARISON MODE ==========
 else:
@@ -841,6 +843,8 @@ else:
             st.warning(f"Error Details: {str(e)}")
             st.info("Please verify your inputs, check platform environment logs, and try again.")
             st.stop()
+    else:
+        st.info("💡 Upload resumes and a job description to compare and rank candidates.")
 
 # ========== FOOTER ==========
 st.divider()

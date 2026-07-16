@@ -733,23 +733,23 @@ def render_recruiter_dashboard(
             
     exec_summary = st.session_state[summary_key]
     
-    # Compute Executive summary details for TASK 1
+    # Compute Executive summary details for TASK 1 & 6
     skills_percent = semantic_gaps.get("match_percentage", 0) if (jd_text and jd_text.strip()) else 75
     effective_jd_match = jd_match_score if (jd_text and jd_text.strip()) else 70
     overall_score = (ats_score * 0.3) + (effective_jd_match * 0.4) + (skills_percent * 0.3)
     
-    # Stars & Assessment
+    # Stars & Assessment (Constructive Verdicts)
     if overall_score >= 85:
-        rating = "★★★★★ Strong Candidate"
+        rating = "★★★★★ Excellent Resume"
     elif overall_score >= 70:
-        rating = "★★★★☆ Good Candidate"
+        rating = "★★★★☆ Strong Profile"
     elif overall_score >= 50:
-        rating = "★★★☆☆ Moderate Candidate"
+        rating = "★★★☆☆ Good AI Foundation"
     else:
-        rating = "★★☆☆☆ Needs Development"
+        rating = "★★☆☆☆ Needs Tech Polish"
         
     # ATS Readiness
-    ats_ready = "ATS Ready" if ats_score >= 80 else ("Review Formatting" if ats_score >= 60 else "Not ATS Compatible")
+    ats_ready = "ATS Excellent" if ats_score >= 80 else ("ATS Proficient" if ats_score >= 60 else "Requires Formatting Polish")
     
     # JD Alignment
     if jd_text and jd_text.strip():
@@ -760,47 +760,58 @@ def render_recruiter_dashboard(
     # Technical Skill Coverage
     if jd_text and jd_text.strip():
         missing_skills = semantic_gaps.get("missing_skills", [])
-        if missing_skills:
-            skill_cov = f"Needs Improvement in {missing_skills[0]}" if len(missing_skills[0]) < 18 else "Requires Tech Polish"
-        else:
+        if skills_percent >= 80:
             skill_cov = "Excellent Coverage"
+        elif skills_percent >= 60:
+            skill_cov = "Satisfactory Coverage"
+        elif missing_skills:
+            skill_cov = f"Needs Polish in {missing_skills[0]}" if len(missing_skills[0]) < 18 else "Domain Gaps Identified"
+        else:
+            skill_cov = "Domain Gaps Identified"
     else:
         skill_cov = "Extracted Verified Skills"
         
-    # Recruiter Recommendation
+    # Recruiter Recommendation (Constructive Guidance)
     if overall_score >= 85:
-        rec_recommend = "Highly Recommended"
+        rec_recommend = "Strongly Recommended"
     elif overall_score >= 70:
         rec_recommend = "Recommended for Interview"
     elif overall_score >= 50:
-        rec_recommend = "Consider for Alternate Role"
+        rec_recommend = "Recommended with Upskilling"
     else:
-        rec_recommend = "Not Recommended for Role"
+        rec_recommend = "Suggest Domain Foundation"
         
     st.markdown("### 🏆 Recruiter Executive Summary")
     
-    # Custom styled HTML grid for Task 1
+    # Tooltip definitions explaining metrics for Task 3 & 4
+    rating_help = "Overall Rating represents the weighted combination of formatting quality (30%), semantic job match (40%), and keyword skill coverage (30%)."
+    ats_help = "ATS Readiness indicates formatting compliance and structural parsing compatibility. It measures layout factors rather than direct skill matches."
+    jd_help = "JD Alignment measures the semantic and conceptual similarity between the candidate experience and the target JD text, using Cosine similarity embeddings."
+    skill_help = "Technical Skill Coverage calculates the percentage of exact and synonym matched skill keywords extracted from the JD against the resume text."
+    rec_help = "Recommendation is the derived action pathway based on overall alignment, providing a constructive recruiter guide for candidates."
+
+    # Custom styled HTML grid for Task 1, 3, & 4
     st.markdown(
         f"""
         <div class="exec-card-grid">
-            <div class="exec-card">
-                <div class="exec-card-title">Overall Rating</div>
+            <div class="exec-card" title="{rating_help}" style="cursor: help;">
+                <div class="exec-card-title">Overall Rating ℹ️</div>
                 <div class="exec-card-value" style="color: #F59E0B;">{rating}</div>
             </div>
-            <div class="exec-card">
-                <div class="exec-card-title">ATS Readiness</div>
+            <div class="exec-card" title="{ats_help}" style="cursor: help;">
+                <div class="exec-card-title">ATS Readiness ℹ️</div>
                 <div class="exec-card-value" style="color: #10B981;">{ats_ready}</div>
             </div>
-            <div class="exec-card">
-                <div class="exec-card-title">JD Alignment</div>
+            <div class="exec-card" title="{jd_help}" style="cursor: help;">
+                <div class="exec-card-title">JD Alignment ℹ️</div>
                 <div class="exec-card-value" style="color: #3B82F6;">{jd_align}</div>
             </div>
-            <div class="exec-card">
-                <div class="exec-card-title">Technical Skill Coverage</div>
+            <div class="exec-card" title="{skill_help}" style="cursor: help;">
+                <div class="exec-card-title">Technical Skill Coverage ℹ️</div>
                 <div class="exec-card-value" style="color: #8B5CF6;">{skill_cov}</div>
             </div>
-            <div class="exec-card">
-                <div class="exec-card-title">Recommendation</div>
+            <div class="exec-card" title="{rec_help}" style="cursor: help;">
+                <div class="exec-card-title">Recommendation ℹ️</div>
                 <div class="exec-card-value" style="color: #EF4444;">{rec_recommend}</div>
             </div>
         </div>
