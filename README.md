@@ -36,7 +36,7 @@ Screen resumes using semantic search and structured parsing.
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License"/></a>
 </p>
 
-🚀 [Live Demo](https://resume-parser-llm-anccbxdbf8muzahbgkugdy.streamlit.app/) | 🎥 [Demo Video](https://www.youtube.com/watch?v=PcdjDKe6LAE) | 💻 [GitHub Repo](https://github.com/kritika038/resume-parser-llm)
+🚀 [Live Demo](https://resume-parser-llm-anccbxdbf8muzahbgkugdy.streamlit.app/) | 🎥 [Demo Video](https://www.youtube.com/watch?v=PcdjDKe6LAE) | 💻 [GitHub Repository](https://github.com/kritika038/resume-parser-llm)
 
 ---
 
@@ -73,8 +73,8 @@ This application parses resumes into structured profiles using LLMs. It scores f
 
 ```mermaid
 graph TD
-    Resume[Resume] --> Extract[Extract Text]
-    Extract --> Parser[LLM Parser]
+    Resume[Resume PDF] --> Extract[Text Extraction]
+    Extract --> Parser[LLM Resume Parser]
     Parser --> ATS[ATS Evaluation]
     ATS --> Embeddings[Sentence Embeddings]
     Embeddings --> Match[Semantic Matching]
@@ -117,7 +117,7 @@ graph TD
 
 ---
 
-## ⚙️ Setup
+## ⚙️ Installation
 
 ```bash
 # Clone the repository
@@ -157,7 +157,7 @@ streamlit run app.py
 ├── Dockerfile              # Docker container configuration
 ├── render.yaml             # Render blueprint configuration
 ├── Procfile                # Heroku/Railway process file
-├── runtime.txt             # Python runtime specification
+├── runtime.txt             # Python runtime declaration
 ├── .env.example            # Environment variables template
 ├── demo_data/              # Sample resumes and job descriptions
 ├── docs/                   # Developer documentation and guides
