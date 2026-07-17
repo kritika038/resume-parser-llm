@@ -26,111 +26,76 @@ tags:
 
 # AI Resume Intelligence Platform
 
-> Recruiter-Grade Resume Parser, Semantic Screening, and ATS Compatibility Scoring Engine.
+AI-powered resume parsing, ATS analysis, semantic JD matching, and recruiter insights with Groq + Ollama support.
 
-<p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Version"/></a>
-  <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-1.30.0-FF4B4B?style=flat-square&logo=streamlit&logoColor=white" alt="Streamlit"/></a>
-  <a href="https://groq.com/"><img src="https://img.shields.io/badge/Groq-Serverless-F55F23?style=flat-square" alt="Groq"/></a>
-  <a href="https://ollama.com/"><img src="https://img.shields.io/badge/Ollama-Local-000000?style=flat-square&logo=ollama&logoColor=white" alt="Ollama"/></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License"/></a>
-</p>
+[🚀 Live Demo](https://resume-parser-llm-anccbxdbf8muzahbgkugdy.streamlit.app/) | [🎥 Demo Video](https://www.youtube.com/watch?v=PcdjDKe6LAE) | [💻 GitHub Repo](https://github.com/kritika038/resume-parser-llm)
 
-### 🚀 [Live Demo](https://resume-parser-llm-anccbxdbf8muzahbgkugdy.streamlit.app/) | 🎥 [Walkthrough Video](https://www.youtube.com/watch?v=PcdjDKe6LAE) | 💻 [GitHub Repo](https://github.com/kritika038/resume-parser-llm)
+## Features
+- **Resume parsing**: Converts PDF resumes into a standard JSON schema structure.
+- **ATS formatting score**: Deterministically analyzes document layout and completeness.
+- **Semantic JD match**: Computes cosine embedding similarity score against JDs.
+- **Skill gap analysis**: Highlights matched requirements and missing skills.
+- **Recruiter dashboard**: Interactive cards showing ratings, fit metrics, and advice.
+- **PDF / JSON / CSV export**: Downloads structured profiles and briefing documents.
+- **Groq and Ollama support**: Enables rapid cloud LPUs or private offline CPUs.
 
----
+## Tech Stack
+| Layer | Tools |
+|---|---|
+| Frontend | Streamlit |
+| LLMs | Groq (Llama 3.1), Ollama (Mistral) |
+| Embeddings | SentenceTransformers (all-MiniLM-L6-v2) |
+| NLP | PyPDF2 |
+| Scoring | scikit-learn (cosine similarity), custom heuristics |
 
-## 🎯 Overview
-Traditional ATS screening systems rely on basic keyword matching, failing to recognize equivalent synonyms (e.g. flagging "AWS" as a mismatch for "Cloud Infrastructure"). 
-
-This platform uses **384-dimensional vector embeddings** to compute semantic similarity between resumes and job descriptions (JDs), alongside structured **LLM inference** to parse CVs into schema-compliant profiles and evaluate ATS formatting compliance.
-
----
-
-## 🏗️ Architecture
-
+## How It Works
 ```mermaid
-graph TD
-    Resume[📄 Candidate Resume] --> Parser[⚙️ Resume Parser]
-    Parser --> LLM[🤖 LLM Provider Channel]
-    LLM -->|Cloud LPU| Groq[Groq Llama 3.1]
-    LLM -->|Local CPU/GPU| Ollama[Ollama Mistral]
-    LLM -->|Structured JSON| ATS[📊 ATS Scoring Engine]
-    LLM -->|Structured JSON| Semantic[💼 Semantic Matcher]
-    Semantic -->|Generate Embeddings| Embedding[🧠 SentenceTransformers]
-    ATS --> Dashboard[🏆 Recruiter Dashboard]
-    Semantic --> Dashboard
-    Dashboard --> Export[📥 PDF / JSON / CSV Exports]
+graph LR
+    Resume[Resume] --> Parser[Parser]
+    Parser --> Embeddings[Embeddings]
+    Embeddings --> ATS[ATS Score]
+    ATS --> JD[JD Match]
+    JD --> Suggestions[Suggestions]
+    Suggestions --> Export[Export]
 ```
 
----
+## Demo
+Watch the [walkthrough video](https://www.youtube.com/watch?v=PcdjDKe6LAE) to see the platform in action.
 
-## ✨ Core Features
+## Installation
+```bash
+# Clone the repository
+git clone https://github.com/kritika038/resume-parser-llm.git
+cd resume-parser-llm
 
-- **Structured Parser**: Extracts education, experience, and projects from PDF resumes into a clean JSON schema.
-- **ATS Formatting Score**: Analyzes formatting layout compliance and document completeness.
-- **Semantic JD Matcher**: Evaluates cosine similarity matching scores between resume details and target JDs.
-- **Skill Gap Analyzer**: Automatically maps missing core requirements and matched technical skills.
-- **Actionable AI Recommendations**: Delivers prioritized, bulleted suggestions (High/Medium/Low priority) to refine profiles.
-- **Bulk Candidate Comparison**: Ranks multiple candidate resumes against a single job description.
+# Initialize and activate virtual environment
+python -m venv venv
+source venv/bin/activate
 
----
+# Install dependencies
+pip install -r requirements.txt
 
-## 🛠️ Tech Stack
+# Run the app
+streamlit run app.py
+```
 
-| Component | Technology |
-| :--- | :--- |
-| **Frontend** | Streamlit |
-| **LLM Inference** | Groq Cloud (Llama 3.1 8B) & Ollama (Mistral 7B) |
-| **Semantic Embeddings** | SentenceTransformers (`all-MiniLM-L6-v2`) |
-| **Parsing & Formatting** | PyPDF2, ReportLab (PDF generator), Pandas (CSV exports) |
+## Environment Variables
+Configure these inside a `.env` file at the root:
+- `LLM_PROVIDER`: Set to `groq` or `ollama`.
+- `GROQ_API_KEY`: Required if using Groq Cloud.
+- `OLLAMA_BASE_URL`: Base URL for Ollama service (default: `http://localhost:11434`).
 
----
+## Folder Structure
+```text
+.
+├── app.py                  # Streamlit application entrypoint
+├── requirements.txt        # Python package dependencies
+├── demo_data/              # Sample resumes and job descriptions
+├── docs/                   # Developer documentation and guides
+├── services/               # Parsing, matching, and scoring algorithms
+├── tests/                  # Automated unit test suite
+└── utils/                  # UI widgets and schema validation helpers
+```
 
-## ⚙️ Installation & Setup
-
-1. **Clone the Repo**:
-   ```bash
-   git clone https://github.com/kritika038/resume-parser-llm.git
-   cd resume-parser-llm
-   ```
-2. **Virtual Environment**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
-3. **Install Packages**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Environment Variables**:
-   Create a `.env` file in the root:
-   ```env
-   LLM_PROVIDER="groq"
-   GROQ_API_KEY="your_groq_api_key"
-   OLLAMA_BASE_URL="http://localhost:11434"
-   ```
-5. **Run App**:
-   ```bash
-   streamlit run app.py
-   ```
-
----
-
-## 🤖 Supported LLM Providers
-
-| Provider | Latency | Offline Support | Use Case |
-| :--- | :--- | :--- | :--- |
-| **Groq Cloud** | **<1.5s** | ❌ (Online) | High-speed cloud screening. |
-| **Ollama** | **~8-12s** | **✓ Yes (Offline)** | Privacy-first local screening (GDPR compliant). |
-
----
-
-## 📄 License
-Distributed under the MIT License. See `LICENSE` for more details.
-
----
-
-## ✍️ Author
-**Kritika Bansal**
-* GitHub: [@kritika038](https://github.com/kritika038)
+## License
+MIT
