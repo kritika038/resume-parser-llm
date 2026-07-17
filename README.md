@@ -41,7 +41,7 @@ Screen resumes using semantic search and structured parsing.
 ---
 
 ## 💻 Application Preview
-![Recruiter Dashboard](screenshots/recruiter_dashboard.png)
+![Application Preview](screenshots/ui.png)
 
 ---
 
