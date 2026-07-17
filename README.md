@@ -26,7 +26,7 @@ tags:
 
 # AI Resume Intelligence Platform
 
-AI-powered resume parsing, ATS analysis, semantic JD matching, and recruiter insights with Groq + Ollama support.
+AI-powered resume parsing, ATS analysis, semantic JD matching, and recruiter insights.
 
 [🚀 Live Demo](https://resume-parser-llm-anccbxdbf8muzahbgkugdy.streamlit.app/) | [🎥 Demo Video](https://www.youtube.com/watch?v=PcdjDKe6LAE) | [💻 GitHub Repo](https://github.com/kritika038/resume-parser-llm)
 
@@ -37,7 +37,7 @@ AI-powered resume parsing, ATS analysis, semantic JD matching, and recruiter ins
 - **Skill gap analysis**: Highlights matched requirements and missing skills.
 - **Recruiter dashboard**: Interactive cards showing ratings, fit metrics, and advice.
 - **PDF / JSON / CSV export**: Downloads structured profiles and briefing documents.
-- **Groq and Ollama support**: Enables rapid cloud LPUs or private offline CPUs.
+- **Groq + Ollama support**: Enables rapid cloud LPUs or private offline CPUs.
 
 ## Tech Stack
 | Layer | Tools |
@@ -46,9 +46,9 @@ AI-powered resume parsing, ATS analysis, semantic JD matching, and recruiter ins
 | LLMs | Groq (Llama 3.1), Ollama (Mistral) |
 | Embeddings | SentenceTransformers (all-MiniLM-L6-v2) |
 | NLP | PyPDF2 |
-| Scoring | scikit-learn (cosine similarity), custom heuristics |
+| Export | reportlab, pandas |
 
-## How It Works
+## Architecture
 ```mermaid
 graph LR
     Resume[Resume] --> Parser[Parser]
@@ -59,10 +59,7 @@ graph LR
     Suggestions --> Export[Export]
 ```
 
-## Demo
-Watch the [walkthrough video](https://www.youtube.com/watch?v=PcdjDKe6LAE) to see the platform in action.
-
-## Installation
+## Setup
 ```bash
 # Clone the repository
 git clone https://github.com/kritika038/resume-parser-llm.git
@@ -84,18 +81,6 @@ Configure these inside a `.env` file at the root:
 - `LLM_PROVIDER`: Set to `groq` or `ollama`.
 - `GROQ_API_KEY`: Required if using Groq Cloud.
 - `OLLAMA_BASE_URL`: Base URL for Ollama service (default: `http://localhost:11434`).
-
-## Folder Structure
-```text
-.
-├── app.py                  # Streamlit application entrypoint
-├── requirements.txt        # Python package dependencies
-├── demo_data/              # Sample resumes and job descriptions
-├── docs/                   # Developer documentation and guides
-├── services/               # Parsing, matching, and scoring algorithms
-├── tests/                  # Automated unit test suite
-└── utils/                  # UI widgets and schema validation helpers
-```
 
 ## License
 MIT
